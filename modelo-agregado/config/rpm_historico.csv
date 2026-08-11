@@ -1,0 +1,8 @@
+vintage,rpm_periodo,target,ipca_acum4t
+# Benchmark contra as projeções oficiais históricas.
+# Cada linha: vintage do RPM (ex.: 2019Q1), período de publicação, trimestre-alvo
+# e IPCA acumulado em 4 trimestres do cenário de referência (Tabela 2.2.1 do RPM).
+# TRANSCRIÇÃO PENDENTE: preencher a partir dos PDFs dos RPMs (2019Q1..2026Q1).
+# Fonte: Relatório de Política Monetária (BCB), cenário de referência.
+# Referência da estrutura de colunas: config/rpm_2026q2.yaml (exemplo preenchido abaixo).
+# 2019Q1,2019Q1,2019Q1,4.3

@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Dados baixados (regeneráveis via 01_download.py + 02_build_dataset.py)
+downloader/data/
+
+# Saídas de modelos (regeneráveis)
+*/output/*.png
+*/output/*.csv
+
+# IDE / SO
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

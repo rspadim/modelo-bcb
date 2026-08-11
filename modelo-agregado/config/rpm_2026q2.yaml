@@ -1,0 +1,64 @@
+# Cenário de referência do RPM de junho/2026 (Tabela 2.2.1 e seção 2.2).
+# Fonte: Relatório de Política Monetária, junho de 2026 (BCB).
+# Transcrito manualmente do PDF (rpm202606p.pdf, págs. 65-70).
+
+rpm_periodo: 2026Q2
+data_divulgacao: 2026-06-25
+
+# IPCA acumulado em quatro trimestres (% a.a.), por trimestre.
+# Colunas: ano -> trimestre -> valor. Efetivos até 2026Q1; projeções de 2026Q2 em diante.
+ipca_acum4t:
+  2025: { Q2: 5.4, Q3: 5.2, Q4: 4.3 }
+  2026: { Q1: 4.1, Q2: 4.8, Q3: 4.8, Q4: 5.2 }
+  2027: { Q1: 4.6, Q2: 4.0, Q3: 4.1, Q4: 3.7 }
+  2028: { Q1: 3.2, Q2: 3.2, Q3: 3.1, Q4: 3.1 }
+
+ipca_livres_acum4t:
+  2025: { Q2: 5.4, Q3: 5.2, Q4: 3.9 }
+  2026: { Q1: 3.7, Q2: 4.6, Q3: 4.8, Q4: 5.3 }
+  2027: { Q1: 5.0, Q2: 4.1, Q3: 4.0, Q4: 3.7 }
+  2028: { Q1: 3.2, Q2: 3.1, Q3: 3.1, Q4: 3.1 }
+
+ipca_admin_acum4t:
+  2025: { Q2: 5.2, Q3: 5.1, Q4: 5.3 }
+  2026: { Q1: 5.5, Q2: 5.3, Q3: 4.9, Q4: 4.7 }
+  2027: { Q1: 3.7, Q2: 3.6, Q3: 4.1, Q4: 3.9 }
+  2028: { Q1: 3.5, Q2: 3.4, Q3: 3.4, Q4: 3.3 }
+
+# --- Condicionantes do cenário de referência ---
+
+# Selic (pesquisa Focus), % a.a. (médias trimestrais)
+selic_focus:
+  2026: { Q2: 14.25, Q4: 13.75 }
+  2027: { Q4: 12.00 }
+  2028: { Q4: 10.25 }
+
+# Câmbio no cenário: parte de R$5,10/US$ (média 2026Q2) e segue PPC (≈ 1% a.a.)
+cambio_inicial: 5.10
+cambio_ppc_depreciacao_aa: 1.0
+
+# Petróleo Brent (US$/barril, média trimestral)
+brent:
+  2026: { Q2: 100, Q3: 95, Q4: 90 }
+  2027: { Q1: 85, Q2: 85, Q3: 86, Q4: 87 }
+  # +2% a.a. a partir de 2028
+
+# Juro real neutra considerada no cenário (% a.a.)
+juro_real_neutra: 5.0
+
+# Meta de inflação (contínua, desde 2025) e intervalo de tolerância
+meta_inflacao: 3.0
+intervalo_tolerancia: 1.5
+
+# Hiato do produto no cenário (%, estimativa do Copom)
+hiato_cenario:
+  2026: { Q1: 0.5, Q2: 0.4 }
+  2027: { Q4: -0.5 }
+
+# El Niño (RONI): formação forte, pico 2,1°C em 2026Q4, normalização a partir de 2027
+roni_cenario:
+  2026: { Q4: 2.1 }
+
+# Curto prazo (Tabela 2.1.2): variação mensal projetada do IPCA
+curto_prazo_mensal:
+  2026: { Jun: 0.32, Jul: 0.26, Ago: 0.23, Set: 0.16 }

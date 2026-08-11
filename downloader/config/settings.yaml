@@ -1,0 +1,16 @@
+# Configurações gerais do downloader.
+
+data_dir: data
+
+snapshots:
+  # Janela de vintages (cutoffs) construídas em 02_build_dataset.py
+  start: 2019Q1
+  end: latest          # até o último trimestre completo
+  experiment: 2026Q2   # vintage alvo do experimento (post / RPM jun/2026)
+  horizon_quarters: 12 # trimestres projetados à frente (para referência)
+
+http:
+  timeout: 40
+  retries: 4
+  backoff: 3
+  user_agent: "modelo-bcb/0.1 (replica MPP BCB)"

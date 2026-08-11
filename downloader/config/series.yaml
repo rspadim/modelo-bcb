@@ -1,0 +1,87 @@
+# Códigos SGS (BCB) usados na réplica do Modelo de Pequeno Porte.
+# Códigos confirmados ao vivo em 11/08/2026.
+sgs:
+  ipca:
+    code: 433
+    name: "IPCA - variação mensal (%)"
+  ipca_12m:
+    code: 13522
+    name: "IPCA - acumulado 12 meses (%)"
+  ipca_livres:
+    code: 11428
+    name: "IPCA - itens livres (%)"
+  ipca_admin:
+    code: 11427
+    name: "IPCA - itens administrados (%)"
+  ipca15:
+    code: 7474
+    name: "IPCA-15 - variação mensal (%)"
+  selic_over_aa:
+    code: 4189
+    name: "Selic over/efetiva anualizada (% a.a.)"
+  selic_meta_acum:
+    code: 4390
+    name: "Meta Selic acumulada no mês (%)"
+  cambio_media:
+    code: 3696
+    name: "PTAX - dólar venda, média do período (R$/US$)"
+  ibc_br:
+    code: 24363
+    name: "IBC-Br índice (sem ajuste sazonal)"
+  ibc_br_saz:
+    code: 24364
+    name: "IBC-Br índice (com ajuste sazonal)"
+  pib_mon_saz:
+    code: 4380
+    name: "PIB-MON índice (com ajuste sazonal)"
+  fiscal_prim_12m:
+    code: 10844
+    name: "Resultado primário do setor público - % do PIB - acumulado 12 meses"
+  fiscal_prim_mensal:
+    code: 5793
+    name: "Resultado primário do setor público - % do PIB - mensal"
+  icbr_indice:
+    code: 28515
+    name: "IC-Br índice de commodities"
+  icbr_var:
+    code: 28451
+    name: "IC-Br variação mensal (%)"
+  embi:
+    code: 18621
+    name: "EMBI+ Brasil (pontos)"
+
+# Indicadores do Focus (OLINDA) a coletar
+focus_indicators:
+  - IPCA
+  - Selic
+  - Câmbio
+
+# SIDRA (IBGE) - IPCA por subitem (para setorização livre/administrados)
+sidra:
+  table_ipca_subitem:
+    table: 7060
+    variable: 63
+    weight_variable: 66
+    name: "IPCA - variação mensal por subitem (%)"
+    chunk_years: 5
+
+# FRED (Fed) - taxa de juros externa
+fred:
+  fedfunds:
+    id: DFF
+    name: "Fed Funds rate (efetiva, diária)"
+  fedfunds_monthly:
+    id: FEDFUNDS
+    name: "Fed Funds rate (média mensal)"
+
+# NOAA - ONI (El Niño/La Niña)
+noaa:
+  oni:
+    name: "Oceanic Niño Index (ONI) - anomalia 3 meses (°C)"
+
+# IpeaData - séries setoriais longas (melhor esforço; pode ficar indisponível)
+ipeadata:
+  setorais:
+    servicos: { code: "PRECOS12_IPCASERV12", name: "IPCA - serviços (acumulado 12m)" }
+    industriais: { code: "PRECOS12_IPCAIND12", name: "IPCA - bens industriais (acumulado 12m)" }
+    alimentacao: { code: "PRECOS12_IPCAAL12", name: "IPCA - alimentação no domicílio (acumulado 12m)" }

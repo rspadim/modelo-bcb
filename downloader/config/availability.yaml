@@ -1,0 +1,39 @@
+# Registro point-in-time: quando cada observação ficou disponível ao público.
+#
+# available_from = fim do período de referência + lag_days
+#   - IPCA: divulgado em geral no dia 8-10 do mês seguinte -> lag 10 dias
+#   - IBC-Br: divulgado ~45 dias após o mês de referência  -> lag 45 dias
+#   - IC-Br: divulgado no mês seguinte                     -> lag 30 dias
+#   - Selic / câmbio / EMBI+ / Fed / ONI: conhecidos na data de referência
+#
+# A regra vale por SÉRIE; o que não estiver listado usa `default_lag_days`.
+
+default_lag_days: 0
+
+series:
+  ipca:            { lag_days: 10 }
+  ipca_12m:        { lag_days: 10 }
+  ipca_livres:     { lag_days: 10 }
+  ipca_admin:      { lag_days: 10 }
+  ipca15:          { lag_days: 10 }
+  selic_over_aa:   { lag_days: 0 }
+  selic_meta_acum: { lag_days: 0 }
+  cambio_media:    { lag_days: 0 }
+  ibc_br:          { lag_days: 45 }
+  ibc_br_saz:      { lag_days: 45 }
+  pib_mon_saz:     { lag_days: 45 }
+  fiscal_prim_12m: { lag_days: 45 }
+  fiscal_prim_mensal: { lag_days: 45 }
+  icbr_indice:     { lag_days: 30 }
+  icbr_var:        { lag_days: 30 }
+  embi:            { lag_days: 0 }
+
+source_defaults:
+  sidra: { lag_days: 10 }
+  noaa:  { lag_days: 0 }
+  fred:  { lag_days: 0 }
+  ipeadata: { lag_days: 10 }
+
+# Focus: a observação fica disponível na data da própria pesquisa (Data).
+focus:
+  mode: survey_date
