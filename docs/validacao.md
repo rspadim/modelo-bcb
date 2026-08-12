@@ -67,13 +67,15 @@ horizonte; comparação com benchmarks (Focus, naive/persistência).
 ## 3.0 Modelo integrado (o modelo BCB da réplica) — `run_integrado.py`
 
 Estimação bayesiana **conjunta plena** (PyMC, hiato + juro neutra latentes + Phillips +
-IS + expectativas) com o sistema único (admin endógeno + expectativas consistentes):
+IS + expectativas) com o sistema único (admin endógeno + expectativas):
 
-- **IRF demanda −1 p.p. (hiato) → IPCA 4T**: ~0,4–0,6 p.p. (RI: −0,45) — a conjunta com o
-  hiato Phillips-consistente corrigiu a divergência que era 1,13 no modo fragmentado.
-- **Juro real neutra** (estado latente): média ~5–6% (offset de nível; direção consistente).
-- **MAE vs RPM jun/2026**: ~0,7–0,8 p.p. (sensível ao número de amostras bayesianas).
-- **IRF câmbio +10% → admin**: ~1,9 p.p. (alvo B9 ~1,8).
+- **MAE vs RPM jun/2026: ~0,50 p.p.** (expectativas híbridas ancoradas — default; o modo
+  `--expect consistent` diverge neste modelo, documentado).
+- **IRF demanda −1 p.p. (hiato) → IPCA 4T**: ~0,22 p.p. (híbrido) / ~0,6 (consistente)
+  — RI: −0,45. O canal de hiato (a4≈0,06) é menor que o do RI (0,14).
+- **Juro real neutra** (estado latente): média ~4,5%.
+- **PIT**: φ2 (consistente) não é estimado com `pi.shift(-1)` — fixado no RI (0,12) e
+  φ1/φ3 com priors ancorados; rodada no Docker com g++ (conjunta ~1 min p/ 400/300).
 
 Este é o único componente tratado como "modelo BCB" na réplica (ver `docs/status.md`);
 `modelo-agregado/` e `modelo-completo/` são experimentos legado.

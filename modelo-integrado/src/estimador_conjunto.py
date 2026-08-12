@@ -66,14 +66,16 @@ def estimar_conjunta(q: pd.DataFrame, start: str = "2003Q4", end: str = "2019Q4"
     rreal1 = d["rreal_1"].values
 
     with pm.Model():
-        # parâmetros com priors dos suportes do RI dez/2021
+        # parâmetros com priors dos suportes do RI dez/2021; b1/a4 ancorados nas modas
+        # do RI (β1≈0,74, α4≈0,14) — a persistência quase unitária (b1≈0,96) diverge
+        # na projeção (hiato não reverte -> inflação acelera)
         a1 = pm.Uniform("a1", 0, 1)
         a2 = pm.Uniform("a2", 0, 1)
         a3 = pm.Uniform("a3", 0, 1)
-        a4 = pm.Uniform("a4", 0, 1)
+        a4 = pm.TruncatedNormal("a4", mu=0.14, sigma=0.1, lower=0, upper=1)
         a5 = pm.Uniform("a5", 0, 0.01)
         a6 = pm.Uniform("a6", 0, 0.01)
-        b1 = pm.Uniform("b1", 0, 1)
+        b1 = pm.TruncatedNormal("b1", mu=0.74, sigma=0.2, lower=0, upper=1)
         b2 = pm.Uniform("b2", 0, 2)
         ldesoc = pm.Normal("ldesoc", -0.3, 0.15)
         mdesoc = pm.Normal("mdesoc", 10.0, 2.0)

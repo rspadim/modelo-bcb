@@ -75,28 +75,36 @@ def estimate_is_bcb(q: pd.DataFrame, start: str = "2003Q4", end: str = "2019Q4",
 
 
 def estimate_expect_bcb(q: pd.DataFrame, start: str = "2003Q4", end: str = "2019Q4",
-                        bayes: bool = True, draws: int = 800, tune: int = 400) -> dict:
-    """Equação de expectativas do RI dez/2021 (inércia + consistente + passada)."""
+                        bayes: bool = True, draws: int = 800, tune: int = 400,
+                        consistent_fixed: float | None = 0.12) -> dict:
+    """Equação de expectativas do RI dez/2021 (inércia + passada).
+
+    O componente CONSISTENTE (φ2) NÃO é estimado na amostra: ele é a expectativa do
+    próprio modelo, resolvida por fixed-point na projeção. Estimar com o realizado
+    (pi.shift(-1)) vazaria 1 trimestre (look-ahead). Aqui φ2 é fixado no valor do RI
+    dez/2021 (0,12) e só φ1/φ3 são estimados in-sample.
+    """
     d = q.copy()
     d["e_prev"] = d["e_pi_next"].shift(1)
     d["pi_prev"] = d["pi"].shift(1)
-    d["e_consistent"] = d["pi"].shift(-1)  # proxy: realizado (expectativa consistente)
     d = d.loc[start:end].copy()
-    sub = d.dropna(subset=["e_pi_next", "e_prev", "pi_prev", "e_consistent"])
-    X = sub[["e_prev", "e_consistent", "pi_prev"]]
+    sub = d.dropna(subset=["e_pi_next", "e_prev", "pi_prev"])
+    X = sub[["e_prev", "pi_prev"]]
     y = sub["e_pi_next"]
 
     if not bayes or pm is None:
         from scipy.optimize import lsq_linear
-        res = lsq_linear(X.values, y.values, bounds=([0, 0, 0], [1, 1, 1]))
-        coef = res.x
-        return {"params": dict(zip(X.columns, coef)), "n": int(len(sub)), "bayes": False}
+        res = lsq_linear(X.values, y.values, bounds=([0, 0], [1, 1]))
+        params = dict(zip(X.columns, res.x))
+        params["e_consistent"] = consistent_fixed
+        return {"params": params, "n": int(len(sub)), "bayes": False}
 
     with pm.Model():
-        f1 = pm.Uniform("e_prev", 0, 1)
-        f2 = pm.Uniform("e_consistent", 0, 1)
-        f3 = pm.Uniform("pi_prev", 0, 1)
-        mu = f1 * X["e_prev"] + f2 * X["e_consistent"] + f3 * X["pi_prev"]
+        # priors informativos ancorados no RI dez/2021 (φ1≈0,73, φ3≈0,04) — sem o termo
+        # consistente estimado, o OLS infla a inércia; ancorar evita projeção pegajosa
+        f1 = pm.TruncatedNormal("e_prev", mu=0.73, sigma=0.2, lower=0, upper=1)
+        f3 = pm.TruncatedNormal("pi_prev", mu=0.05, sigma=0.08, lower=0, upper=1)
+        mu = f1 * X["e_prev"] + f3 * X["pi_prev"]
         sigma = pm.HalfNormal("sigma", 1.0)
         pm.Normal("y", mu=mu, sigma=sigma, observed=y.values)
         trace = pm.sample(draws=draws, tune=tune, chains=2, cores=2,
@@ -105,5 +113,6 @@ def estimate_expect_bcb(q: pd.DataFrame, start: str = "2003Q4", end: str = "2019
     def post(name):
         return float(trace.posterior[name].values.mean())
 
-    return {"params": {k: post(k) for k in X.columns}, "n": int(len(sub)),
-            "bayes": True, "_trace": trace}
+    params = {k: post(k) for k in X.columns}
+    params["e_consistent"] = consistent_fixed
+    return {"params": params, "n": int(len(sub)), "bayes": True, "_trace": trace}

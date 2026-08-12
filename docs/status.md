@@ -38,11 +38,21 @@ parciais que serviram para fechar peças, mas **não** são o modelo BCB.
 
 | Validação | Réplica integrada | Alvo (BCB) |
 |---|---|---|
-| IRF demanda −1 p.p. (hiato) → IPCA 4T | ~0,38 p.p. | −0,45 p.p. |
+| IRF demanda −1 p.p. (hiato) → IPCA 4T | ~0,22 (híbrido) / ~0,6 (consistente) p.p. | −0,45 p.p. |
 | IRF câmbio +10% → admin (4T) | ~1,9 p.p. | ~1,8 p.p. |
-| MAE vs RPM jun/2026 | ~0,7 p.p. (sensível a amostras) | — |
-| Juro real neutra (estado) | média ~5%, fim ~5-6% | ~3,6% (2021) |
+| MAE vs RPM jun/2026 | **~0,50 p.p.** (expectativas híbridas) | — |
+| Juro real neutra (estado) | média ~4,5% | ~3,6% (2021) |
 | Decomposição 2024 (importada) | ~0,0 (canal fraco na amostra pública) | 0,72 p.p. |
+
+> **Notas de estabilidade/PIT** (auditoria agressiva):
+> - **Expectativas**: o componente consistente (φ2) NÃO é estimado com `pi.shift(-1)`
+>   (look-ahead de 1T); φ2 é fixado no valor do RI (0,12) e φ1/φ3 são estimados com
+>   priors ancorados no RI. A projeção usa por padrão **expectativas híbridas ancoradas
+>   à meta** (`--expect hybrid`, estável); o modo `--expect consistent` (fixed-point φ2)
+>   diverge neste modelo (hiato quase unitário, b1≈0,96) — documentado.
+> - **Convergência**: a conjunta plena com `--est conjunta` roda no Docker (g++, ~1 min
+>   para 400/300); alguns parâmetros têm R-hat > 1,01 — priors ancorados em b1/a4
+>   ajudam, mas os dados puxam b1≈0,96.
 
 > A convergência para o BCB "oficial" esbarra em três fronteiras que não são de modelagem:
 > dados (Nuci/Caged, CDS, vintages), julgamento de especialistas e parâmetros internos

@@ -45,6 +45,8 @@ def main() -> None:
     ap.add_argument("--draws", type=int, default=400)
     ap.add_argument("--tune", type=int, default=250)
     ap.add_argument("--est", choices=["conjunta", "staged"], default="conjunta")
+    ap.add_argument("--expect", choices=["hybrid", "consistent"], default="hybrid",
+                    help="expectativas: hybrid (ancoradas na meta, estável) ou consistent (φ2 fixed-point)")
     args = ap.parse_args()
     OUT.mkdir(exist_ok=True)
 
@@ -103,7 +105,7 @@ def main() -> None:
                                      last_oni=float(q["oni"].dropna().iloc[-1]))
 
     # ---- projeção ----
-    fc = sys_integ.forecast(horizon=args.horizon, scenario=scenario, expect_mode="consistent")
+    fc = sys_integ.forecast(horizon=args.horizon, scenario=scenario, expect_mode=args.expect)
     rpm_path = rpm_mod.rpm_ipca_path(cfg)
     comp = fc.set_index("period")
     comp.index = pd.PeriodIndex(comp.index, freq="Q")
@@ -114,9 +116,11 @@ def main() -> None:
     comp.to_csv(OUT / "projecao_integrada.csv", index_label="period")
 
     # ---- IRFs vs RI dez/2021 ----
-    base = sys_integ.forecast(horizon=args.horizon, scenario=scenario)
-    irf_gap = sys_integ.forecast(horizon=args.horizon, scenario=scenario, shock_gap_pp=-1.0)
-    irf_cam = sys_integ.forecast(horizon=args.horizon, scenario=scenario, shock_cambio_pp=10.0)
+    base = sys_integ.forecast(horizon=args.horizon, scenario=scenario, expect_mode=args.expect)
+    irf_gap = sys_integ.forecast(horizon=args.horizon, scenario=scenario, expect_mode=args.expect,
+                                 shock_gap_pp=-1.0)
+    irf_cam = sys_integ.forecast(horizon=args.horizon, scenario=scenario, expect_mode=args.expect,
+                                 shock_cambio_pp=10.0)
     d_gap = irf_gap["pi4"] - base["pi4"]
     d_cam = irf_cam["pi4"] - base["pi4"]
     print("\nIRFs (Δ p.p. IPCA 4T) vs RI dez/2021:")

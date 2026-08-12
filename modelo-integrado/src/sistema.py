@@ -51,9 +51,13 @@ class SistemaIntegrado:
         meta_q = META / 4
         rows = []
         for i, period in enumerate(periods):
-            e = float(e_seq[i]) if e_seq is not None else (
-                self.p_expect.get("e_prev", 0) * state["e_prev"]
-                + self.p_expect.get("pi_prev", 0) * state["pi_prev"])
+            if e_seq is not None:
+                e = float(e_seq[i])
+            else:
+                # híbrido ancorado (default): convergência gradual à meta — o fixed-point
+                # consistente (φ2) diverge neste modelo (hiato quase unitário, b1≈0,96)
+                e = 0.8 * state["e_prev"] + 0.2 * meta_q
+            state["e_prev"] = e
             sc = scenario.loc[period] if scenario is not None and period in scenario.index else None
             if sc is not None:
                 selic = float(sc["selic"])
@@ -104,7 +108,7 @@ class SistemaIntegrado:
             rows.append({"period": str(period), "pi": pi, "pi_l": pi_l, "pi_a": pi_a,
                          "e_pi_next": e, "selic": selic, "gap": gap, "dln_cambio": dln_c})
             state["pi_l"], state["pi_a"], state["gap"], state["selic"] = pi_l, pi_a, gap, selic
-            state["e_prev"], state["pi_prev"] = e, pi_l
+            state["pi_prev"] = pi_l
             gap2 = gap
 
         out = pd.DataFrame(rows)
@@ -115,7 +119,7 @@ class SistemaIntegrado:
         return out
 
     def forecast(self, horizon: int = 12, scenario=None, admin_path_exog=None,
-                 expect_mode: str = "consistent", expect_tol: float = 1e-3,
+                 expect_mode: str = "hybrid", expect_tol: float = 1e-3,
                  expect_maxiter: int = 40, shock_gap_pp: float = 0.0,
                  shock_cambio_pp: float = 0.0) -> pd.DataFrame:
         q = self.q.copy()
