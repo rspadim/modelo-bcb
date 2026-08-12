@@ -8,3 +8,4 @@ PyYAML>=6.0
 matplotlib>=3.7
 seaborn>=0.13
 streamlit>=1.30
+pymc>=5.10

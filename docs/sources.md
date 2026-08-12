@@ -18,6 +18,7 @@ Todas as séries são coletadas por API pública (sem chave). Códigos SGS confe
 | `ibc_br_saz` | 24364 | IBC-Br índice (com ajuste sazonal) | hiato do produto |
 | `icbr_indice` | 28515 | IC-Br índice de commodities | pressão externa (Phillips) |
 | `icbr_var` | 28451 | IC-Br variação mensal (%) | idem (vintage recente) |
+| `nucleo_ex0` | 4466 | Núcleo IPCA por exclusão (EX0) — mensal (%) | análise/validação |
 | `embi` | 18621 | EMBI+ Brasil (pontos) | prêmio de risco (UIP) — **indisponível na prática** |
 
 Observações sobre códigos verificados:
@@ -54,7 +55,34 @@ Filtro por `Indicador` (IPCA, Selic, Câmbio), paginação com `$skip`. A coluna
 ## FRED — `https://fred.stlouisfed.org/graph/fredgraph.csv`
 
 - `DFF` (Fed Funds efetiva diária) e `FEDFUNDS` (média mensal) — juro externo na UIP.
+- `MCOILBRENTEU` (média mensal, US$/barril) — petróleo Brent (canais de administrados).
 - **Não é fatal**: se o host estiver inacessível, o download registra o erro no manifesto e o restante prossegue. O juro externo pode ser suprido por outra fonte em etapa posterior.
+
+## IBGE/SIDRA — tabelas trimestrais
+
+- **Tabela 5932**, variável `6561`, classificação `11255`, categoria `90707` — PIB a preços de
+  mercado, taxa trimestral vs mesmo período do ano anterior (%) — indicador de atividade.
+- **Tabela 4099**, variável `4099` — PNAD Contínua, taxa de desocupação (%) — mercado de
+  trabalho (hiato multi-indicador).
+
+## ANEEL — dados abertos (bandeiras tarifárias)
+
+`https://dadosabertos.aneel.gov.br/dataset/bandeiras-tarifarias` — CSVs de **Acionamento**
+(bandeira ativa por mês + adicional em R$/MWh) e **Adicional** (valores por REH). Fonte do
+`modelo-completo/config/bandeiras.csv`, usado no bloco de administrados calibrado
+(energia elétrica).
+
+## Fontes documentais do modelo (ver `docs/proveniencia.md` e `docs/referencias/`)
+
+| Fonte | Uso |
+|---|---|
+| RI dez/2021, boxe b7 (`ri202112b7p`) | **Tabela de priors** do agregado |
+| RI set/2020, boxe b7 | Novo modelo agregado bayesiano |
+| RI jun/2024, boxes b10–b12 | Hiato (JL), juro real neutra, atualização dos semiestruturais |
+| RPM jun/2025, anexo B9 (`rpm202506b9i`) | 24 equações de administrados + IRFs-alvo |
+| RI mar/2023, boxe b4 | Sistema de análise e projeções do BC |
+| WP 305 (RePEc bcb:wpaper:305) | Preços administrados: projeção e repasse cambial |
+| WP 440 (RePEc bcb:wpaper:440) | Decomposição de inflação |
 
 ## Não disponível (limitações honestas)
 

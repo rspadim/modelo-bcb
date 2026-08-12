@@ -37,11 +37,14 @@ O Banco Central publica a **estrutura** do seu Modelo de Pequeno Porte (curva de
 | Modelo | Descrição | MAE vs RPM |
 |---|---|---:|
 | **Agregado** | Phillips livre (restrição novo-keynesiana) + IS + Taylor + UIP + expectativas + admin + hiato HP | **0,20 p.p.** |
-| **Completo** | 3 Phillips setoriais (serviços, bens industriais, alimentação) + Kalman + repasse cambial | 1,07 p.p. * |
+| **Completo** | 3 Phillips setoriais + estado-espaço + cenário condicionado (câmbio PPC, Brent, RONI) + **admin calibrado (B9)** | **0,46 p.p.** |
+| **Completo (bayesiano)** | Phillips + IS + admin conjuntos (PyMC), repasse cambial positivo | 0,60 p.p. |
 
 \* Amostra setorial limitada a 2020+ (SIDRA) — menor robustez, documentado.
 
 ![Hiato do produto](docs/figures/hiato.png)
+
+![Fan chart paramétrico (incerteza da posterior)](docs/figures/fan_chart_parametrico.png)
 
 ## Validação
 
@@ -94,16 +97,22 @@ validação vs cenário oficial (RPM) · backtest rolante · long horizon
 ## Documentação
 
 - [📄 Relatório completo](docs/relatorio.md) — todas as figuras, tabelas e limitações.
-- [📐 Equações](docs/equacoes.md) — especificação + 24 itens de administrados (anexo B9 do RPM).
+- [📐 Equações](docs/equacoes.md) — especificação + bloco de administrados (anexo B9).
 - [🛡 Validação](docs/validacao.md) — metodologia, métricas e auditoria point-in-time.
-- [🗂 Fontes de dados](docs/sources.md) · [⏱ Point-in-time](docs/point-in-time.md) · [🏗 Arquitetura](docs/arquitetura.md)
+- [🏛 Modelagem no BCB × réplica](docs/modelagem_bcb.md) — auditoria de lacunas e roadmap.
+- [🧬 Priors do BCB (RI dez/2021)](docs/priors_bcb.md) — tabela transcrita.
+- [🗂 Fontes de dados](docs/sources.md) · [⏱ Point-in-time](docs/point-in-time.md) · [🏗 Arquitetura](docs/arquitetura.md) · [🔍 Proveniência](docs/proveniencia.md)
 
 ## Limitações honestas
 
 - **IC-Br** com lacuna 2024H2–2025Q3 → Phillips estimada até 2024Q2.
 - **Prêmio de risco** (EMBI+/CDS) sem histórico público → absorvido na constante da UIP.
-- **Repasse cambial** com sinal negativo na réplica (amostra OLS confundida pela apreciação 2021–23) — diverge do benchmark do BCB.
-- **Hiato externo** e **pesos pré-2020** não determináveis nas fontes públicas.
+- **Repasse cambial**: negativo no OLS (apreciação 2021–23 confunde a amostra); a
+  estimação **bayesiana com prior positivo** corrige o sinal (IRF +0,46 p.p. em 4T).
+- **Admin calibrado (B9)**: estrutura por regra com repasses nos alvos de IRF do anexo
+  (câmbio +1,87 / petróleo +1,31 p.p.); o agregado SIDRA de admin não reproduz a cesta
+  oficial (~0,1) — o calibrado usa a série oficial como alvo.
+- **Hiato externo**, **pesos pré-2020** e **Nuci/Caged** não determináveis nas fontes públicas.
 
 Detalhes e números atualizados em [`docs/validacao.md`](docs/validacao.md).
 

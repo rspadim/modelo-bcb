@@ -20,6 +20,8 @@ STEPS = [
     ("backtest", ["python", "modelo-agregado/scripts/backtest.py"]),
     ("longhorizon", ["python", "modelo-agregado/scripts/longhorizon.py"]),
     ("completo", ["python", "modelo-completo/scripts/run_complete.py"]),
+    ("irf_and_risk", ["python", "modelo-completo/scripts/irf_and_risk.py",
+                      "--draws", "200", "--npaths", "100"]),
     ("validate_sector", ["python", "modelo-completo/scripts/validate_sector.py"]),
     ("figuras", ["python", "scripts/make_figures.py"]),
 ]

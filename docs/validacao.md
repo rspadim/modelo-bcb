@@ -59,11 +59,41 @@ horizonte; comparação com benchmarks (Focus, naive/persistência).
 
 ## 3. Resultados do modelo completo (setorial, 2020+)
 
-- **MAE vs RPM: 1,07 p.p.** (11 trimestres) — pior que o agregado.
+- **MAE vs RPM: 0,46 p.p.** (11 trimestres) com o cenário de referência completo
+  condicionado (Selic Focus, câmbio PPC, Brent, RONI) **e bloco de administrados
+  calibrado** (`--admin calibrado`, default). Sem os condicionantes o MAE era ~1,07 p.p.;
+  com admin OLS, 0,59 p.p.
+- **Bloco de administrados calibrado (anexo B9)**: estrutura por regra institucional,
+  repasses de câmbio/petróleo calibrados nos **alvos de IRF do anexo** — verificação:
+  câmbio +10% → admin **+1,87 p.p.** em 4T (alvo 1,8); petróleo +10% → **+1,31 p.p.**
+  (alvo 1,3). Aderência in-sample à série oficial (SGS 11427): corr ~0,40, MAE ~0,62 p.p.
+  mensal. Limitação: o agregado SIDRA de admin não reproduz a cesta oficial (corr ~0,1).
+- **Estimação bayesiana (PyMC, conjunta Phillips+IS+admin): MAE 0,60 p.p.**,
+  com repasse cambial imposto positivo e prior informativo do hiato na Phillips
+  (evita os coeficientes explosivos 4–18 da amostra curta). `run_complete.py --est bayes`.
+- **IRFs** (modelo bayesiano, efeito no IPCA acumulado 4T):
+
+  | Choque | Pico (Δ p.p.) | Horizonte |
+  |---|---:|---:|
+  | Câmbio +10% (depreciação) | +0,46 | ~4T |
+  | Demanda +1 p.p. (hiato) | +0,44 | ~4T |
+  | Brent +10% (nível, 1º T) | +0,04 | 1T |
+  | Selic +1 p.p. | ≈ −0,00 | — (canal de juro real fraco) |
+
+- **Balanço de riscos**: P(IPCA4 fora de [1,5; 4,5]) ≈ **0,80–0,83** em 2026Q4–2028Q4
+  (fan chart paramétrico, amostras da posterior) — próximo do ~0,79 do RPM.
+- **Satélite de administrados (24+1 equações, `admin24.py`)**: equações por item
+  estimadas (SIDRA 2020+). **Limitação**: o agregado ponderado do satélite tem
+  correlação ~0,11 com a série oficial (SGS 11427) — a cesta/pesos oficiais dos
+  administrados não são reproduzíveis da classificação atual do SIDRA (os livres
+  reproduzem a 0,98). O sistema usa a equação agregada de admin estimada sobre a
+  série oficial. As 25 equações permanecem como módulo de pesquisa documentado.
 - **Limitação dominante**: as Phillips setoriais são estimadas em apenas ~23
-  trimestres (SIDRA 2020+), produzindo coeficientes instáveis (ex.: hiato na
-  alimentação com coeficiente muito elevado). O bloco setorial é o componente de
-  menor robustez da réplica e deve ser lido com cautela.
+  trimestres (SIDRA 2020+), produzindo coeficientes instáveis. O bloco setorial é
+  o componente de menor robustez da réplica e deve ser lido com cautela.
+- **Expectativas consistentes (fixed-point)**: disponível (`--expect consistent`),
+  mas piora o ajuste (MAE 1,54) porque as Phillips de amostra curta têm hiato
+  explosivo; o modo híbrido (ancorado na meta) acompanha melhor o RPM.
 
 ## 4. Backtest rolante (modelo agregado, 29 vintages, 293 observações)
 
@@ -85,13 +115,14 @@ Benchmark publicado no anexo B9 do RPM jun/2025 (IRF sem reação de política):
 máximo no acumulado 4T de **+1,8 p.p. em administrados**, **+0,7 p.p. em livres** e
 **+1,0 p.p. no IPCA** após ~4 trimestres.
 
-Resultado da réplica: ver `modelo-completo/output/repasse_cambial.csv`. **Atenção**:
-nas estimações OLS com amostra 2002–2026 (agregado) e 2020+ (setorial), os
-coeficientes de câmbio nas Phillips saem fracos e de sinal negativo (período de
-apreciação cambial combinada com inflação alta em 2021–2023 confunde a estimação),
-de modo que o exercício **não reproduz o repasse positivo do BCB**. Isso é uma
-limitação honesta da réplica com estimação reduzida por equação, e não um
-defeito da especificação do BCB.
+Resultado da réplica: ver `modelo-completo/output/repasse_cambial.csv`. **OLS**:
+coeficientes de câmbio nas Phillips saem fracos e de sinal negativo (apreciação
+cambial combinada com inflação alta em 2021–2023 confunde a estimação), de modo que
+o exercício em OLS não reproduz o repasse positivo do BCB. **Bayesiano** (prior
+positivo de repasse, `--est bayes`): IRF de câmbio +10% → **+0,46 p.p.** no IPCA
+acumulado 4T em ~4 trimestres — sinal correto e magnitude compatível (mais baixa
+que os +1,0 do anexo). Isso é uma limitação honesta da réplica com estimação
+reduzida por equação, e não um defeito da especificação do BCB.
 
 ## 6. Metas de referência (benchmarks)
 
@@ -120,7 +151,8 @@ python downloader/scripts/01_download.py
 python downloader/scripts/02_build_dataset.py
 python modelo-agregado/scripts/run_aggregate.py     # projeção + fan chart + comparação
 python modelo-agregado/scripts/backtest.py          # backtest rolante
-python modelo-completo/scripts/run_complete.py      # setorial + repasse cambial
+python modelo-completo/scripts/run_complete.py      # setorial (--est bayes p/ bayesiana)
+python modelo-completo/scripts/irf_and_risk.py      # IRFs + balanço de riscos + fan chart paramétrico
 python modelo-completo/scripts/validate_sector.py   # validação da setorização
 ```
 

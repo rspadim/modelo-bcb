@@ -1,0 +1,53 @@
+# Manifesto de especificação do modelo (point-in-time).
+# Cada artefato de especificação é uma "vintage" da publicação do BCB; o check
+# spec_manifesto.py avisa se uma reestimação usa especificação posterior ao cutoff.
+default: rpm_2026q2
+specs:
+  priors_agregado:
+    fonte: RI dez/2021, boxe b7 (ri202112b7p)
+    vintage: 2021Q4
+    available_from: 2021-12-31
+    usado_em: priors do modelo agregado / suportes
+    status: transcrito
+  admin_equacoes:
+    fonte: RPM jun/2025, anexo B9 (rpm202506b9i)
+    vintage: 2025Q2
+    available_from: 2025-06-30
+    usado_em: admin_calibrado.py (estrutura B9 + alvos de IRF)
+    status: transcrito (estrutura; parâmetros não publicados -> calibrados nos alvos)
+  rpm_2026q2:
+    fonte: RPM jun/2026, Tabela 2.2.1 e seção 2.2
+    vintage: 2026Q2
+    available_from: 2026-06-25
+    usado_em: rpm_2026q2.yaml / rpm.py::scenario_path
+    status: transcrito
+  semiestruturais_2024:
+    fonte: RI jun/2024, boxe b12 (ri202406b12p)
+    vintage: 2024Q2
+    available_from: 2024-06-28
+    usado_em: auditoria de lacunas
+    status: leitura
+  hiato_jl_2024:
+    fonte: RI jun/2024, boxe b10 (ri202406b10p)
+    vintage: 2024Q2
+    available_from: 2024-06-28
+    usado_em: gap multi-indicador (referência)
+    status: leitura
+  juro_neutra_2024:
+    fonte: RI jun/2024, boxe b11 (ri202406b11p)
+    vintage: 2024Q2
+    available_from: 2024-06-28
+    usado_em: juro real neutra (referência)
+    status: leitura
+  sistema_projecoes_2023:
+    fonte: RI mar/2023, boxe b4 (ri202303b4p)
+    vintage: 2023Q1
+    available_from: 2023-03-31
+    usado_em: docs/modelagem_bcb.md (processo)
+    status: leitura
+  bandeiras_aneel:
+    fonte: ANEEL, dados abertos (Bandeiras Tarifárias)
+    vintage: continua
+    available_from: 2015-01-01
+    usado_em: admin_calibrado.py / config/bandeiras.csv
+    status: transcrito

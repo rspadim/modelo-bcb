@@ -56,6 +56,13 @@ def _load_all(cfg, series_cfg, dirs) -> pd.DataFrame:
     else:
         missing.append("sidra:ipca_subitem")
 
+    for qkey in ("pib_trimestral", "desocupacao"):
+        f = dirs["raw"] / "sidra" / f"t{series_cfg['sidra'][qkey]['table']}_v{series_cfg['sidra'][qkey]['variable']}.json"
+        if f.exists():
+            frames.append(sidra_mod.sidra_quarterly_to_frame(io_utils.read_json(f)))
+        else:
+            missing.append(f"sidra:{qkey}")
+
     f = dirs["raw"] / "noaa" / "oni.json"
     if f.exists():
         frames.append(noaa_mod.noaa_to_frame(io_utils.read_json(f)))

@@ -1,6 +1,7 @@
 """Estimação das equações estruturais (OLS, uma equação por vez)."""
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 
@@ -36,6 +37,10 @@ def estimate_all(q: pd.DataFrame, start: str = "2002Q1",
     q["rreal"] = q["selic"] - 4 * q["e_pi_next"]
     q["dev_pi"] = q["e_pi_next"] - q["meta"]
     q["diff_juros"] = (q["selic"] - q["ff"]).shift(1)
+    if "brent" in q.columns and q["brent"].notna().any():
+        q["dln_brent"] = np.log(q["brent"]).diff() * 100
+    else:
+        q["dln_brent"] = np.nan
 
     q = _with_lags(q, {
         "pi_l_1": ("pi_l", 1), "gap_1": ("gap", 1), "gap_2": ("gap", 2),
@@ -91,9 +96,11 @@ def estimate_all(q: pd.DataFrame, start: str = "2002Q1",
     out["uip"] = _ols(d["dln_cambio"], d[["diff_juros"]], ["diff_juros"])
 
     d = q.dropna(subset=["pi_a", "pi_a_1", "pi_l_1", "dln_cambio"])
-    out["admin"] = _ols(d["pi_a"], d[["pi_a_1", "pi_l_1", "dln_cambio"]],
-                        ["pi_a_1", "pi_l_1", "dln_cambio"])
-
+    regs = ["pi_a_1", "pi_l_1", "dln_cambio"]
+    if d["dln_brent"].notna().any():
+        d = d.dropna(subset=["dln_brent"])
+        regs.append("dln_brent")
+    out["admin"] = _ols(d["pi_a"], d[regs], regs)
     d = q.dropna(subset=["e_pi_next", "e_pi_next_1", "pi_1"])
     out["expect"] = _ols(d["e_pi_next"], d[["e_pi_next_1", "pi_1"]],
                          ["e_pi_next_1", "pi_1"])

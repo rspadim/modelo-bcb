@@ -112,13 +112,23 @@ novo-keynesiana e pesos na identidade:
 π^L_t = w_serv·π^serv + w_ind·π^ind + w_alim·π^alim   (pesos em fração dos livres)
 ```
 
-### 2.3 Hiato do produto e juro neutro (estado-espaço, 2 estágios)
+### 2.3 Hiato do produto e juro neutro (estado-espaço)
 
 - **Estágio 1**: decomposição do log(IBC-Br saz) em tendência local + ciclo
   amortecido (AR) via `UnobservedComponents` (filtro de Kalman). O ciclo é o hiato.
+  **Alternativa multi-indicador** (`--gap multi`): fator comum de Δlog(IBC-Br),
+  PIB trimestral (crescimento YoY, SIDRA 5932) e desocupação (PNAD Contínua, SIDRA
+  4099) via `DynamicFactor`, calibrado à escala do hiato em %. Na amostra curta o
+  fator é dominado pelo IBC-Br (corr ~1,0 com o ciclo univariado).
 - **Estágio 2**: as demais equações são estimadas condicionadas ao hiato suavizado.
-- O BCB desde 2020 estima hiato e juro neutro como latentes (estado-espaço); o juro
-  neutro do cenário do RPM é 5,0% (usado como referência nas simulações).
+- **Estimação bayesiana conjunta** (`--est bayes`, `src/bayes.py`): Phillips
+  setoriais + IS + admin estimadas juntas no PyMC, com priors informativos
+  centrados no OLS; **repasse cambial imposto positivo** (HalfNormal) e **prior
+  informativo do hiato na Phillips** (N(0,4; 0,3), evitando coeficientes explosivos
+  da amostra curta). Taylor/UIP/expectativas permanecem do OLS.
+- O BCB desde 2020 estima hiato e juro neutro como latentes conjuntamente; a réplica
+  trata o hiato em estágio separado (documentado) e usa o juro neutro de 5,0% do
+  cenário do RPM como referência nas simulações.
 
 ### 2.4 Bloco de preços administrados — 24 equações (anexo B9 do RPM jun/2025)
 
@@ -165,6 +175,27 @@ a projeção do IVDA (julgamento do especialista do BCB) e das bandeiras tarifá
 Na réplica, esses itens são tratados com a estrutura de indexação acima e dados de
 subitem do SIDRA (2020+) — ver `modelo-completo/src/sector.py`.
 
+**Implementação na réplica — calibrada como o BCB** (`modelo-completo/src/admin_calibrado.py`,
+`--admin calibrado`, default): o BCB deixa explícito que as equações de administrados **não
+são estimadas, mas calibradas** com base no arcabouço institucional ("not estimated
+equations, but calibrated equations based on the current institutional framework" — RPM
+jun/2025, anexo B9). A réplica implementa a estrutura por regra (energia ANEEL + bandeira +
+Itaipu/câmbio; medicamentos CMED; plano de saúde ANS/IVDA; combustíveis petróleo(R$)+ICMS
+no 1ºT; GLP margem no 3ºT; transportes/água/telecom indexados), calibra os **repasses de
+câmbio e petróleo nos alvos de IRF do próprio anexo** (câmbio +10% → admin ≈ +1,8 p.p. em
+4T; petróleo +10% → ≈ +1,3 p.p.) e ajusta sazonalidade + indexação à série oficial
+(SGS 11427). `admin24.py` (estimação OLS por item) permanece como módulo de referência.
+**Limitação documentada**: o agregado de administrados a partir do SIDRA 2020+ não reproduz
+a cesta oficial (corr ~0,1); por isso o agregado calibrado usa a série oficial como alvo.
+
+### 2.5 Expectativas consistentes com o modelo (fixed-point)
+
+Disponível em `run_complete.py --expect consistent`: itera o sistema até
+`E_t[π_{t+1}] = π_{t+1}` projetado (ancoragem terminal na meta). Nas Phillips
+setoriais de amostra curta o equilíbrio auto-realizável fica alto (MAE 1,54 vs
+0,59 do híbrido); o modo padrão ancorado à meta (0,8·E + 0,2·meta/4) acompanha
+melhor o RPM e permanece o default.
+
 ---
 
 ## 3. Condicionantes do cenário de referência (RPM jun/2026)
@@ -177,3 +208,8 @@ Transcritos em `modelo-agregado/config/rpm_2026q2.yaml`:
 - Câmbio: parte de R$ 5,10/US$ e segue PPC (~1% a.a.).
 - Petróleo Brent: US$ 100 em 2026Q2 → US$ 85 em 2027Q1 → +2% a.a.
 - Juro real neutra: 5,0%. Meta: 3,0% (±1,5 p.p.). El Niño forte (RONI 2,1 °C em 2026Q4).
+
+**Wiring no sistema** (`rpm.py::scenario_path` + `system.py::forecast(scenario=...)`):
+a projeção do modelo completo agora condiciona **câmbio (PPC), Brent, ONI/RONI e
+juro real neutra** ao cenário, além da Selic (Focus). O hiato do cenário do Copom
+(0,5% em 2026Q1) é referência, não restrição.

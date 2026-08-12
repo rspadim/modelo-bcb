@@ -28,6 +28,10 @@ series:
   icbr_indice:     { lag_days: 30 }
   icbr_var:        { lag_days: 30 }
   embi:            { lag_days: 0 }
+  nucleo_ex0:      { lag_days: 20 }
+  # Trimestrais (ref_date = fim do trimestre): PIB ~75 dias; PNAD Contínua ~75 dias
+  t5932_v6561:     { lag_days: 75 }
+  t4099_v4099:     { lag_days: 75 }
 
 source_defaults:
   sidra: { lag_days: 10 }

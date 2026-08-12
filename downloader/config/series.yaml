@@ -49,6 +49,9 @@ sgs:
   embi:
     code: 18621
     name: "EMBI+ Brasil (pontos)"
+  nucleo_ex0:
+    code: 4466
+    name: "Núcleo IPCA por exclusão (EX0) - variação mensal (%)"
 
 # Indicadores do Focus (OLINDA) a coletar
 focus_indicators:
@@ -64,6 +67,16 @@ sidra:
     weight_variable: 66
     name: "IPCA - variação mensal por subitem (%)"
     chunk_years: 5
+  pib_trimestral:
+    table: 5932
+    variable: 6561
+    classification: 11255
+    category: 90707
+    name: "PIB a preços de mercado - taxa trimestral vs mesmo período do ano anterior (%)"
+  desocupacao:
+    table: 4099
+    variable: 4099
+    name: "PNAD Contínua - taxa de desocupação, 14+ anos (%)"
 
 # FRED (Fed) - taxa de juros externa
 fred:
@@ -73,6 +86,9 @@ fred:
   fedfunds_monthly:
     id: FEDFUNDS
     name: "Fed Funds rate (média mensal)"
+  brent:
+    id: MCOILBRENTEU
+    name: "Petróleo Brent (média mensal, US$/barril)"
 
 # NOAA - ONI (El Niño/La Niña)
 noaa:

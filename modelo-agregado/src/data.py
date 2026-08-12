@@ -74,9 +74,14 @@ def build_quarterly(df: pd.DataFrame) -> pd.DataFrame:
 
     sgs_keys = ["ipca", "ipca_livres", "ipca_admin", "selic_over_aa",
                 "cambio_media", "ibc_br_saz", "fiscal_prim_12m",
-                "icbr_indice", "icbr_var"]
+                "icbr_indice", "icbr_var", "nucleo_ex0"]
     m = sgs[sgs["series"].isin(sgs_keys)][["ref_date", "series", "value"]]
     m = m.pivot(index="ref_date", columns="series", values="value").sort_index()
+
+    # Brent (FRED, mensal, US$/barril)
+    brent = df[(df["source"] == "fred") & (df["series"] == "brent")][["ref_date", "value"]]
+    brent = brent.set_index("ref_date")["value"].astype(float).groupby(level=0).last()
+    m["brent"] = brent.reindex(m.index)
 
     # IC-Br mensal (% var): 28451 onde houver; senão deriva do índice 28515.
     icbr = m["icbr_var"].copy()
@@ -101,16 +106,28 @@ def build_quarterly(df: pd.DataFrame) -> pd.DataFrame:
         "ipca_admin": _compound_group,
         "selic_over_aa": "mean", "cambio_media": "mean", "ibc_br_saz": "mean",
         "fiscal_prim_12m": "mean", "oni": "mean", "icbr": _compound_group,
-        "ff": "mean",
+        "ff": "mean", "nucleo_ex0": _compound_group, "brent": "mean",
     })
     q.columns = ["pi", "pi_l", "pi_a", "selic", "cambio", "ibc_br", "fiscal",
-                 "oni", "pi_com", "ff"]
+                 "oni", "pi_com", "ff", "nucleo", "brent"]
     q = q.dropna(subset=["pi"])
     q["pi4"] = _compound(q["pi"], 4)
     q["pi4_l"] = _compound(q["pi_l"], 4)
     q["pi4_a"] = _compound(q["pi_a"], 4)
     q["dln_cambio"] = np.log(q["cambio"]).diff() * 100
     q["l_ibc"] = np.log(q["ibc_br"])
+
+    # SIDRA trimestrais (PIB YoY e desocupação) alinhadas ao fim do trimestre
+    def _quarter_series(df: pd.DataFrame, series_key: str) -> pd.Series:
+        s = df[(df["source"] == "sidra") & (df["series"] == series_key)][["ref_date", "value"]]
+        s = s.set_index("ref_date")["value"].astype(float)
+        s.index = pd.to_datetime(s.index)
+        s = s.groupby(s.index.to_period("Q")).last()
+        s.index = s.index.to_timestamp(how="end").normalize()
+        return s
+
+    for col, key in [("pib_yoy", "t5932_v6561"), ("desocupacao", "t4099_v4099")]:
+        q[col] = _quarter_series(df, key).reindex(q.index)
 
     e = _expectations_quarterly(focus)
     e.index = e.index.to_period("Q")

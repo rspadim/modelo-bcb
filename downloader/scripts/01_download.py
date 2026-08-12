@@ -57,6 +57,12 @@ def main() -> None:
         payload = sidra_mod.download_sidra(spec, cfg, dirs, force=args.force)
         manifest["sidra"] = {"fetched_at": fetched_at, "rows": len(payload.get("values", []))}
         print(f"SIDRA: {len(payload.get('values', []))} observações de subitens")
+        for qkey in ("pib_trimestral", "desocupacao"):
+            spec_q = series_cfg["sidra"][qkey]
+            payload_q = sidra_mod.download_sidra_quarterly(spec_q, cfg, dirs, force=args.force)
+            nq = len(payload_q.get("values", []))
+            manifest.setdefault("sidra_quarterly", {})[qkey] = nq
+            print(f"SIDRA {qkey}: {nq} observações")
 
     if "noaa" in wanted:
         payload = noaa_mod.download_noaa(cfg, dirs, force=args.force)
