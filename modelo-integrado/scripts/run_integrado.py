@@ -18,8 +18,12 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
-for p in [ROOT / "src", ROOT.parent / "modelo-agregado" / "src"]:
+for p in [ROOT / "src", ROOT.parent / "modelo-agregado" / "src", ROOT.parent / "modelo-completo"]:
     sys.path.insert(0, str(p))
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 from data import load_snapshot, build_quarterly  # noqa: E402
 import gap as gap_mod  # noqa: E402
@@ -27,6 +31,7 @@ from estimador_conjunto import estimar_conjunta  # noqa: E402
 from sistema import SistemaIntegrado  # noqa: E402
 from equacoes_bcb import estimate_is_bcb, estimate_expect_bcb, _hp_cycle  # noqa: E402
 from phillips_bcb import estimate_phillips_bcb_bayes  # noqa: E402
+from src import spec_manifesto as spec_man  # noqa: E402
 import equations as eqmod  # noqa: E402
 import rpm as rpm_mod  # noqa: E402
 
@@ -44,6 +49,9 @@ def main() -> None:
     OUT.mkdir(exist_ok=True)
 
     df = load_snapshot(args.vintage)
+    cutoff = pd.Timestamp(df["available_from"].max()) if "available_from" in df.columns else pd.NaT
+    if not spec_man.check_spec("rpm_2026q2", cutoff) or not spec_man.check_spec("priors_agregado", cutoff):
+        sys.exit("[spec_manifesto] especificação/cenário posterior ao cutoff da vintage — abortando.")
     q = build_quarterly(df)
     q = gap_mod.add_gap_kalman(q)
     q["gap_1"] = q["gap"].shift(1)

@@ -25,8 +25,13 @@ from src import phillips as pset
 from src import system as csystem
 from src import bayes as bayes_mod
 from src import admin_calibrado as admin_cal
+from src import spec_manifesto as spec_man
 import equations as eqmod
 import rpm as rpm_mod
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 OUT = ROOT / "output"
 BAND = (1.5, 4.5)  # intervalo de tolerância da meta contínua (±1,5 p.p. em torno de 3%)
@@ -34,6 +39,9 @@ BAND = (1.5, 4.5)  # intervalo de tolerância da meta contínua (±1,5 p.p. em t
 
 def build_model(vintage: str, args):
     df = dcomplete.load_snapshot(vintage)
+    cutoff = pd.Timestamp(df["available_from"].max()) if "available_from" in df.columns else pd.NaT
+    if not spec_man.check_spec("rpm_2026q2", cutoff):
+        sys.exit("[spec_manifesto] cenário RPM posterior ao cutoff da vintage — abortando.")
     q = dcomplete.build_complete_quarterly(df)
     q = kgap.add_gap_kalman(q)
     q = q.loc["2020Q1":]

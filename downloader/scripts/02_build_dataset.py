@@ -77,7 +77,8 @@ def _load_all(cfg, series_cfg, dirs) -> pd.DataFrame:
             fred_payloads[key] = p
         else:
             missing.append(f"fred:{key}")
-    frames.append(fred_mod.fred_to_frame(fred_payloads))
+    fred_quarterly = {k for k, v in series_cfg["fred"].items() if v.get("freq") == "quarterly"}
+    frames.append(fred_mod.fred_to_frame(fred_payloads, quarterly=fred_quarterly))
 
     ipea_payloads = {}
     for key in series_cfg["ipeadata"]["setorais"]:

@@ -201,9 +201,9 @@ def _irf_scale(df: pd.DataFrame, est: dict, shock: str, coeff: float,
 
     shock='fx' (câmbio +10%) ou 'oil' (petróleo +10%). Retorna Δ p.p. no pico.
     """
-    last = pd.Timestamp("2026-05-01")
-    idx = pd.date_range(last + pd.DateOffset(months=1), periods=horizon, freq="MS")
     sgs = df[(df["source"] == "sgs") & (df["series"] == "cambio_media")][["ref_date", "value"]]
+    last = pd.Timestamp(sgs["ref_date"].max())
+    idx = pd.date_range(last + pd.DateOffset(months=1), periods=horizon, freq="MS")
     c0 = float(sgs.set_index(pd.to_datetime(sgs["ref_date"]))["value"].astype(float).dropna().iloc[-1])
     br = df[(df["source"] == "fred") & (df["series"] == "brent")][["ref_date", "value"]]
     b0 = float(br.set_index(pd.to_datetime(br["ref_date"]))["value"].astype(float).dropna().iloc[-1])

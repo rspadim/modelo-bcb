@@ -16,9 +16,15 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT.parent / "modelo-completo"))
 
 from src import data as data_mod
 from src import equations, gap as gap_mod, rpm as rpm_mod, system as system_mod
+from src import spec_manifesto as spec_man
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 OUT = ROOT / "output"
 
@@ -33,6 +39,9 @@ def main() -> None:
     OUT.mkdir(exist_ok=True)
 
     df = data_mod.load_snapshot(args.vintage)
+    cutoff = pd.Timestamp(df["available_from"].max()) if "available_from" in df.columns else pd.NaT
+    if not spec_man.check_spec("rpm_2026q2", cutoff):
+        sys.exit("[spec_manifesto] cenário RPM posterior ao cutoff da vintage — abortando.")
     q = data_mod.build_quarterly(df)
     q = gap_mod.add_gap(q)
     q = q.loc["2002Q1":]

@@ -18,6 +18,11 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT.parent / "modelo-completo"))
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 from data import load_snapshot, build_quarterly  # noqa: E402
 import gap as gap_mod  # noqa: E402
@@ -26,6 +31,7 @@ from equacoes_bcb import estimate_is_bcb, estimate_expect_bcb  # noqa: E402
 from estado_espaco_bcb import estimate_neutral_rate  # noqa: E402
 from decomposicao import decompose, decompose_period  # noqa: E402
 from system_bcb import BcbSystem  # noqa: E402
+from src import spec_manifesto as spec_man  # noqa: E402
 import equations as eqmod  # noqa: E402
 import rpm as rpm_mod  # noqa: E402
 
@@ -49,6 +55,9 @@ def main() -> None:
     OUT.mkdir(exist_ok=True)
 
     df = load_snapshot(args.vintage)
+    cutoff = pd.Timestamp(df["available_from"].max()) if "available_from" in df.columns else pd.NaT
+    if not spec_man.check_spec("rpm_2026q2", cutoff) or not spec_man.check_spec("priors_agregado", cutoff):
+        sys.exit("[spec_manifesto] especificação/cenário posterior ao cutoff da vintage — abortando.")
     q = build_quarterly(df)
     q = gap_mod.add_gap_kalman(q) if args.gap == "kalman" else gap_mod.add_gap(q)
     q["gap_1"] = q["gap"].shift(1)

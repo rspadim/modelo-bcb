@@ -32,6 +32,12 @@ series:
   # Trimestrais (ref_date = fim do trimestre): PIB ~75 dias; PNAD Contínua ~75 dias
   t5932_v6561:     { lag_days: 75 }
   t4099_v4099:     { lag_days: 75 }
+  # FRED (ref_date = fim do mês/trimestre). MCOILBRENTEU (Brent mensal) sai ~1-5
+  # dias após o fim do mês; GDPC1/GDPPOT (PIB real e potencial dos EUA, trimestral)
+  # saem ~30 dias após o fim do trimestre (lag 0 vazaria até ~1 mês/trimestre).
+  brent:           { lag_days: 5 }
+  us_gdp:          { lag_days: 30 }
+  us_gdp_pot:      { lag_days: 30 }
 
 source_defaults:
   sidra: { lag_days: 10 }

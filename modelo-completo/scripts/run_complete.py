@@ -19,6 +19,10 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))  # pacote src = modelo-completo/src
 sys.path.insert(0, str(ROOT.parent / "modelo-agregado" / "src"))  # módulos planos agregados
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 from src import data as dcomplete
 from src import gap as kgap
 from src import phillips as pset
@@ -98,8 +102,8 @@ def main() -> None:
 
     cfg_rpm = rpm_mod.load()
     cutoff = pd.Timestamp(df["available_from"].max()) if "available_from" in df.columns else None
-    spec_man.check_spec("rpm_2026q2", cutoff)
-    spec_man.check_spec("admin_equacoes", cutoff)
+    if not spec_man.check_spec("rpm_2026q2", cutoff) or not spec_man.check_spec("admin_equacoes", cutoff):
+        sys.exit("[spec_manifesto] especificação/cenário posterior ao cutoff da vintage — abortando.")
     last_q = q.index[-1].to_period("Q")
     next_q = last_q + 1
     end_q = next_q + (args.horizon - 1)

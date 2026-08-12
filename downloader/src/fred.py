@@ -43,17 +43,30 @@ def download_fred(series_cfg: dict, cfg: dict, dirs: dict,
     return out
 
 
-def fred_to_frame(payloads: dict) -> pd.DataFrame:
+def fred_to_frame(payloads: dict, quarterly: set | None = None) -> pd.DataFrame:
+    """Converte payloads FRED para DataFrame longo.
+
+    quarterly: conjunto de chaves cuja série é trimestral (ex.: GDPC1/GDPPOT vêm
+    do FRED com ref_date no INÍCIO do trimestre, ex.: 2026-04-01 para 2026Q2).
+    Normaliza para o FIM do trimestre (ex.: 2026-06-30), alinhado às demais séries
+    trimestrais (SIDRA) e para que o lag PIT conte do fim do período.
+    """
+    quarterly = quarterly or set()
     rows = []
     for key, payload in payloads.items():
         if "error" in payload:
             continue
         for v in payload.get("values", []):
+            ref = v["data"]
+            if key in quarterly:
+                ts = pd.to_datetime(ref)
+                if ts.month in (1, 4, 7, 10) and ts.day == 1:  # início de trimestre
+                    ref = (ts + pd.offsets.QuarterEnd(0)).isoformat()
             rows.append(
                 {
                     "source": "fred",
                     "series": key,
-                    "ref_date": v["data"],
+                    "ref_date": ref,
                     "value": v["valor"],
                 }
             )

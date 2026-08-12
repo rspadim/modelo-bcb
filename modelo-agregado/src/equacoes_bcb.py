@@ -37,9 +37,11 @@ def estimate_is_bcb(q: pd.DataFrame, start: str = "2003Q4", end: str = "2019Q4",
     d = q.copy()
     d["rreal"] = d["selic"] - 4 * d["e_pi_next"]
     d["rreal_gap"] = r_neutral - d["rreal"]                # juro real gap (β2 ∈ [0,2])
+    d = d.loc[start:end].copy()
+    # fisc_cc/incert calculados DENTRO da janela: o filtro HP é bilateral (suavizado) —
+    # calculá-lo sobre a série cheia da vintage contaminaria a janela com dados futuros.
     d["fisc_cc"] = _hp_cycle(d["fiscal"])                 # ciclo-corrigido (desvio)
     d["incert"] = d["dln_cambio"].rolling(12, min_periods=8).std()  # proxy incerteza
-    d = d.loc[start:end].copy()
     sub = d.dropna(subset=["gap", "gap_1", "rreal_gap", "fisc_cc", "incert", "us_gap"])
     X = sub[["gap_1", "rreal_gap", "fisc_cc", "incert", "us_gap"]]
     y = sub["gap"]

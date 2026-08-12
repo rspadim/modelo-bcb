@@ -66,9 +66,10 @@ def estimate_neutral_rate(q: pd.DataFrame, start: str = "2003Q4", end: str = "20
     """Estima a taxa neutra latente (Kalman) + IS, amostra 2003T4–2019T4."""
     d = q.copy()
     d["rreal"] = d["selic"] - 4 * d["e_pi_next"]
+    d = d.loc[start:end].copy()
+    # fisc_cc dentro da janela (HP bilateral não deve ver dados além de `end`)
     d["fisc_cc"] = eqb._hp_cycle(d["fiscal"])
     d["incert"] = d["dln_cambio"].rolling(12, min_periods=8).std()
-    d = d.loc[start:end].copy()
     sub = d.dropna(subset=["gap", "gap_1", "rreal", "fisc_cc", "incert", "us_gap"])
     y = sub["gap"].values
     exog = np.column_stack([np.ones(len(sub)), sub["gap_1"], sub["fisc_cc"],

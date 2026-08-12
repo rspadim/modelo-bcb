@@ -111,9 +111,9 @@ def estimate_joint(q: pd.DataFrame, start: str = "2003Q4", end: str = "2019Q4",
     d["elnino"] = d["oni"].clip(lower=0)
     d["lanina"] = (-d["oni"]).clip(lower=0)
     d["rreal"] = d["selic"] - 4 * d["e_pi_next"]
-    d["rreal_1"] = d["rreal"].shift(1).ffill().bfill()
+    d["rreal_1"] = d["rreal"].shift(1).ffill()
     for c in ["imp", "dev_ppc", "elnino", "lanina"]:
-        d[c] = d[c].ffill().bfill()
+        d[c] = d[c].ffill()
     d = d.loc[start:end].copy()
 
     y = d[["dl_ibc", "desocupacao", "pi_l"]]

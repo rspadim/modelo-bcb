@@ -92,9 +92,11 @@ fred:
   us_gdp:
     id: GDPC1
     name: "EUA PIB real (trimestral)"
+    freq: quarterly
   us_gdp_pot:
     id: GDPPOT
     name: "EUA PIB potencial (CBO, trimestral)"
+    freq: quarterly
 
 # NOAA - ONI (El Niño/La Niña)
 noaa:

@@ -38,10 +38,12 @@ def _prep(q: pd.DataFrame, start: str = "2003Q4", end: str = "2019Q4"):
     d["rreal"] = d["selic"] - 4 * d["e_pi_next"]
     d["rreal_1"] = d["rreal"].shift(1)
     for c in ["imp", "dev_ppc", "elnino", "lanina", "rreal_1"]:
-        d[c] = d[c].ffill().bfill()
+        d[c] = d[c].ffill()
     d = d.loc[start:end].copy()
     d["pi_l_1"] = d["pi_l"].shift(1)
-    valid = d["pi_l"].notna() & d["e_pi_next"].notna() & d["pi_l_1"].notna()
+    valid = (d["pi_l"].notna() & d["e_pi_next"].notna() & d["pi_l_1"].notna()
+             & d["imp"].notna() & d["dev_ppc"].notna() & d["elnino"].notna()
+             & d["lanina"].notna() & d["rreal_1"].notna())
     d = d[valid].copy()
     return d
 
