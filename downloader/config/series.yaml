@@ -89,6 +89,12 @@ fred:
   brent:
     id: MCOILBRENTEU
     name: "Petróleo Brent (média mensal, US$/barril)"
+  us_gdp:
+    id: GDPC1
+    name: "EUA PIB real (trimestral)"
+  us_gdp_pot:
+    id: GDPPOT
+    name: "EUA PIB potencial (CBO, trimestral)"
 
 # NOAA - ONI (El Niño/La Niña)
 noaa:

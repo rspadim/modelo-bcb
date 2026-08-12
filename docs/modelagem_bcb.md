@@ -40,28 +40,55 @@ RPM jun/2025 B9, RI mar/2023 b4), `docs/priors_bcb.md`, `docs/proveniencia.md`.
 
 | # | Aspecto | BCB | Réplica | Lacuna (impacto) |
 |---|---|---|---|---|
-| 1 | **Estimação conjunta** | Estado-espaço bayesiano: hiato+neutro latentes com as equações | 2 estágios (hiato primeiro) + bloco bayesiano parcial | **Alta** (P3) |
-| 2 | **Inflação importada** | IC-Br em R$ como desvio da meta, 3 componentes; câmbio como desvio da PPC | IC-Br agregado % + Δe nominal | **Média** (P2) |
-| 3 | **Clima** | El Niño/La Niña assimétricos | ONI simétrico | **Baixa** (P2) |
-| 4 | **Expectativas consistentes** | φ2 ≈ 0,12 no padrão | só no modo `consistent` | **Média** (P4) |
-| 5 | **Admin** | Calibrado por regra (B9) | **Calibrado agora** (`--admin calibrado`), repasses nos alvos B9 | ✓ (P1) |
-| 6 | **IS** | Fiscal ciclo-corrigido, incerteza, hiato mundial | Primário cru | **Média** (P5) |
+| 1 | **Estimação conjunta** | Estado-espaço bayesiano: hiato+neutro latentes com as equações | 2 estágios (hiato primeiro) + **juro neutro latente (Kalman, P3)** | **Média** (P3 parcial) |
+| 2 | **Inflação importada** | IC-Br em R$ como desvio da meta, 3 componentes; câmbio como desvio da PPC | **IC-Br R$ + câmbio PPC (P2)**; componentes não disponíveis | Baixa |
+| 3 | **Clima** | El Niño/La Niña assimétricos | **Assimétrico (P2)** | ✓ |
+| 4 | **Expectativas consistentes** | φ2 ≈ 0,12 no padrão | **Estimada com φ2 (P4)**; projeção usa `consistent` | Baixa |
+| 5 | **Admin** | Calibrado por regra (B9) | **Calibrado (P1)** | ✓ |
+| 6 | **IS** | Fiscal ciclo-corrigido, incerteza, hiato mundial | **Completa (P5)**, incerteza/hiato por proxy | Baixa |
 | 7 | **UIP** | Prêmio de risco (CDS 5a) | Constante (sem CDS público) | Baixa (dado indisponível) |
-| 8 | **Juro neutro** | Latente no estado | Fixo (5,0% do cenário) | **Média** (P3) |
+| 8 | **Juro neutro** | Latente no estado | **Latente (P3)**: média 3,6%, cai para ~2% | ✓ |
 | 9 | **Especialistas curto prazo** | Nowcasts livres/admin | Sem | Baixa (julgamento) |
-| 10 | **Dados do hiato** | PIB, Nuci, desocupação, Caged | IBC-Br, PIB, desocupação (Nuci/Caged não obtidos) | **Média** (P3, candidatos) |
+| 10 | **Dados do hiato** | PIB, Nuci, desocupação, Caged | IBC-Br, PIB, desocupação (Nuci/Caged não obtidos) | **Média** (dado) |
 
 ## 3. Roadmap para o modelo `bcb` fiel ao teórico
 - **P1 ✓ — Admin calibrado** (B9): estrutura por regra + repasses calibrados nos alvos de
-  IRF do anexo; in-sample corr ~0,40 vs SGS 11427 (o agregado SIDRA não reproduz a cesta
-  oficial — documentado); MAE vs RPM **0,46 p.p.** (era 0,59 com admin OLS).
-- **P2 — Phillips agregada fiel**: inflação importada em R$ (desvio da meta), câmbio como
-  desvio da PPC, clima assimétrico, suportes do RI dez/2021, amostra 2003T4–2019T4.
-- **P3 — Estado-espaço conjunto bayesiano**: hiato + juro neutro latentes com PIB/Nuci/
-  desocupação/Caged (candidatos Nuci/Caged a confirmar).
-- **P4 — Expectativas consistentes no padrão** (φ2 como o BCB).
-- **P5 — IS completa** (fiscal ciclo-corrigido, incerteza, hiato mundial).
-- **P6 — Decomposição de inflação** (WP 440) como validação.
+  IRF do anexo; MAE vs RPM **0,46 p.p.** (era 0,59 com admin OLS).
+- **P2 ✓ — Phillips agregada fiel** (`phillips_bcb.py`): IC-Br em R$ (importada), câmbio
+  como desvio da PPC, clima assimétrico (El Niño/La Niña), priors do RI dez/2021, amostra
+  2003T4–2019T4. Estimação bayesiana (priors Uniform do RI): inércia **0,35** (RI 0,24),
+  canais não degenerados (imp 0,006, dev_ppc 0,006, hiato 0,05, clima 0,005).
+- **P3 ✓ — Juro real neutra latente** (`estado_espaco_bcb.py`): random walk estimado com a
+  IS via Kalman (statsmodels MLEModel). Resultado: média **3,63%**, caindo de ~5% para ~2%
+  no fim da amostra — consistente com a narrativa do BCB (3,6% em 2021). A versão completa
+  (hiato E neutra conjuntos, bayesiano) fica como evolução — os quatro indicadores de
+  atividade do BCB (PIB, Nuci, desocupação, Caged) não estão todos disponíveis.
+- **P4 ✓ — Expectativas com componente consistente** (`equacoes_bcb.py::estimate_expect_bcb`):
+  φ1 inércia 0,43 (RI 0,73), φ2 consistente 0,42 (RI 0,12 — proxy pelo realizado), φ3 passada
+  0,08 (RI 0,04). Usada no modo `--expect consistent` do sistema completo.
+- **P5 ✓ — IS completa** (`equacoes_bcb.py::estimate_is_bcb`): fiscal **ciclo-corrigido**
+  (desvio HP) + **incerteza** (proxy: vol rolante do câmbio) + **hiato mundial** (proxy:
+  hiato do produto dos EUA, FRED GDPC1/GDPPOT). Resultados: AR **0,77** (RI 0,74), fiscal
+  **0,029** (RI 0,030), incerteza 0,052 (RI 0,041), hiato mundial 0,18 (RI 0,04 — proxy).
+- **P6 ✓ — Decomposição de inflação** (`decomposicao.py`): contribuições ao desvio de
+  livres vs meta (inércia, expectativas, importada, câmbio, hiato, clima). 2024: inércia
+  0,33, expect 0,65, hiato 0,11, importada 0,00, residual 0,69 — vs ofício 374 (inércia
+  0,52, importada 0,72, hiato 0,49, expect 0,30). A diferença reflete o canal de inflação
+  importada fraco (coef ~0) e o residual alto da estimação restrita.
+
+### Comparação resumida (réplica vs modas do RI dez/2021)
+
+| Equação | Parâmetro | Réplica | RI 2021 |
+|---|---|---|---|
+| Phillips | inércia | 0,35 | 0,24 |
+| | hiato | 0,05 | 0,14 |
+| IS | AR | 0,77 | 0,74 |
+| | fiscal ciclo-corrigido | 0,029 | 0,030 |
+| | incerteza | 0,052 | 0,041 |
+| Expectativas | inércia | 0,43 | 0,73 |
+| | consistente | 0,42 | 0,12 |
+
+`modelo-agregado/scripts/run_bcb.py` reproduz tudo e salva `comparacao_bcb_ri2021.csv`.
 
 ## 4. Notas de fidelidade
 - Parâmetros numéricos das 24 equações de admin **não são publicados**; a réplica calibra

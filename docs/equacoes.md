@@ -196,6 +196,32 @@ setoriais de amostra curta o equilíbrio auto-realizável fica alto (MAE 1,54 vs
 0,59 do híbrido); o modo padrão ancorado à meta (0,8·E + 0,2·meta/4) acompanha
 melhor o RPM e permanece o default.
 
+## 4. Modelo agregado fiel ao BCB (RI dez/2021) — `modelo-agregado/scripts/run_bcb.py`
+
+Estimação bayesiana com os **priors/suportes publicados** (ver `docs/priors_bcb.md`),
+amostra 2003T4–2019T4:
+
+- **Phillips** (`phillips_bcb.py`): `πL = α1·πL_1 + (1−α1)·Eπ + α2·imp + α3·dev_ppc
+  + α4·hiato_1 + α5·ElNiño + α6·LaNiña` — `imp` = IC-Br em R$ (importada), `dev_ppc` =
+  Δe − PPC (câmbio como desvio da PPC), clima assimétrico. Priors Uniform nos suportes
+  do RI: α1∈[0,1], α2,α3,α4∈[0,1], α5,α6∈[0,0,01].
+- **IS completa** (`equacoes_bcb.py`): `gap = β1·gap_1 + β2·(r̄−r)_1 + β3·fisc_cc
+  + β4·incert + β5·us_gap` — fiscal **ciclo-corrigido** (desvio HP), incerteza (proxy:
+  vol rolante do câmbio), hiato mundial (proxy: hiato do produto dos EUA, FRED
+  GDPC1/GDPPOT). Priors: β1∈[−2,2], β2∈[0,2], β3,β4 Beta, β5∈[0,1].
+- **Expectativas com componente consistente**: `Eπ = φ1·Eπ_1 + φ2·Eπ_consistente
+  + φ3·π_1` (φi∈[0,1]); `Eπ_consistente` na estimação é proxy pelo realizado.
+- **Juro real neutra latente** (`estado_espaco_bcb.py`): passeio aleatório estimado com a
+  IS via filtro de Kalman (σ_η fixo pequeno); trajetória suavizada = taxa neutra.
+- **Decomposição** (`decomposicao.py`): contribuições ao desvio de livres vs meta
+  (inércia, expectativas, importada, câmbio, hiato, clima) — como WP 440/ofício 374.
+
+**Resultados** (`run_bcb.py` → `comparacao_bcb_ri2021.csv`): inércia Phillips 0,35 (RI
+0,24); IS AR 0,77 (0,74), fiscal 0,029 (0,030), incerteza 0,052 (0,041); juro neutra
+média 3,6% (fim da amostra ~2,0%); decomposição 2024 inércia 0,33 / expect 0,65 / hiato
+0,11 / importada 0,00 vs ofício 374 (0,52 / 0,30 / 0,49 / 0,72). Diferenças refletem o
+canal de importada fraco e o residual da estimação restrita — documentado.
+
 ---
 
 ## 3. Condicionantes do cenário de referência (RPM jun/2026)

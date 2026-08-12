@@ -56,6 +56,8 @@ Filtro por `Indicador` (IPCA, Selic, Câmbio), paginação com `$skip`. A coluna
 
 - `DFF` (Fed Funds efetiva diária) e `FEDFUNDS` (média mensal) — juro externo na UIP.
 - `MCOILBRENTEU` (média mensal, US$/barril) — petróleo Brent (canais de administrados).
+- `GDPC1` (PIB real) e `GDPPOT` (PIB potencial, CBO) — **hiato do produto dos EUA** como
+  proxy do hiato mundial na IS completa (RI dez/2021).
 - **Não é fatal**: se o host estiver inacessível, o download registra o erro no manifesto e o restante prossegue. O juro externo pode ser suprido por outra fonte em etapa posterior.
 
 ## IBGE/SIDRA — tabelas trimestrais

@@ -19,6 +19,8 @@ STEPS = [
     ("agregado", ["python", "modelo-agregado/scripts/run_aggregate.py"]),
     ("backtest", ["python", "modelo-agregado/scripts/backtest.py"]),
     ("longhorizon", ["python", "modelo-agregado/scripts/longhorizon.py"]),
+    ("bcb_agregado", ["python", "modelo-agregado/scripts/run_bcb.py",
+                      "--draws", "250", "--tune", "150"]),
     ("completo", ["python", "modelo-completo/scripts/run_complete.py"]),
     ("irf_and_risk", ["python", "modelo-completo/scripts/irf_and_risk.py",
                       "--draws", "200", "--npaths", "100"]),

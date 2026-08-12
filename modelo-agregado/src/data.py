@@ -101,6 +101,17 @@ def build_quarterly(df: pd.DataFrame) -> pd.DataFrame:
     ff = ff.set_index("ref_date")["value"].groupby(level=0).last()
     m["ff"] = ff.reindex(m.index)
 
+    # Hiato mundial proxy: hiato do produto dos EUA (FRED GDPC1/GDPPOT, trimestral)
+    us = df[df["source"] == "fred"].copy()
+    us = us[us["series"].isin(["us_gdp", "us_gdp_pot"])][["ref_date", "series", "value"]]
+    us_gap_q = None
+    if len(us):
+        us = us.pivot(index="ref_date", columns="series", values="value").sort_index()
+        us = us.astype(float)
+        us_gap = (us["us_gdp"] / us["us_gdp_pot"] - 1.0) * 100
+        us_gap = us_gap[~us_gap.index.duplicated()]
+        us_gap_q = us_gap.resample("QE").last()
+
     q = m.resample("QE").agg({
         "ipca": _compound_group, "ipca_livres": _compound_group,
         "ipca_admin": _compound_group,
@@ -116,6 +127,10 @@ def build_quarterly(df: pd.DataFrame) -> pd.DataFrame:
     q["pi4_a"] = _compound(q["pi_a"], 4)
     q["dln_cambio"] = np.log(q["cambio"]).diff() * 100
     q["l_ibc"] = np.log(q["ibc_br"])
+    if us_gap_q is not None:
+        us_idx = q.index.to_period("Q").to_timestamp(how="end").normalize()
+        q["us_gap"] = us_gap_q.reindex(us_idx)
+        q["us_gap"] = q["us_gap"].ffill()
 
     # SIDRA trimestrais (PIB YoY e desocupação) alinhadas ao fim do trimestre
     def _quarter_series(df: pd.DataFrame, series_key: str) -> pd.Series:

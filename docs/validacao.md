@@ -63,6 +63,28 @@ horizonte; comparação com benchmarks (Focus, naive/persistência).
   condicionado (Selic Focus, câmbio PPC, Brent, RONI) **e bloco de administrados
   calibrado** (`--admin calibrado`, default). Sem os condicionantes o MAE era ~1,07 p.p.;
   com admin OLS, 0,59 p.p.
+
+## 3.1 Modelo agregado fiel ao BCB (RI dez/2021) — `run_bcb.py`
+
+Estimação bayesiana com os **priors publicados** do RI dez/2021 (amostra 2003T4–2019T4),
+comparação com as modas a posteriori do BCB:
+
+| Equação | Parâmetro | Réplica | RI 2021 | Leitura |
+|---|---|---|---|---|
+| Phillips | inércia | 0,35 | 0,24 | mesmo ballpark |
+| | hiato | 0,05 | 0,14 | menor (hiato HP vs estado-espaço) |
+| | importada / câmbio-PPC | 0,006 / 0,006 | 0,018 / 0,017 | canais fracos na amostra pública |
+| IS | AR | 0,77 | 0,74 | próximo |
+| | fiscal ciclo-corrigido | 0,029 | 0,030 | próximo |
+| | incerteza | 0,052 | 0,041 | próximo |
+| | hiato mundial (proxy EUA) | 0,18 | 0,04 | proxy mais alto |
+| Expectativas | inércia / consistente | 0,43 / 0,42 | 0,73 / 0,12 | proxy da consistente infla φ2 |
+
+- **Juro real neutra latente** (Kalman): média **3,6%**, cai de ~5% para ~2% no fim da
+  amostra — consistente com a narrativa do BCB.
+- **Decomposição 2024** (vs ofício 374): inércia 0,33 (0,52) · expectativas 0,65 (0,30) ·
+  importada 0,00 (0,72) · hiato 0,11 (0,49) · residual 0,69. O canal de inflação
+  importada não é identificado pela amostra pública (coef ~0) — limitação documentada.
 - **Bloco de administrados calibrado (anexo B9)**: estrutura por regra institucional,
   repasses de câmbio/petróleo calibrados nos **alvos de IRF do anexo** — verificação:
   câmbio +10% → admin **+1,87 p.p.** em 4T (alvo 1,8); petróleo +10% → **+1,31 p.p.**

@@ -37,6 +37,7 @@ O Banco Central publica a **estrutura** do seu Modelo de Pequeno Porte (curva de
 | Modelo | Descrição | MAE vs RPM |
 |---|---|---:|
 | **Agregado** | Phillips livre (restrição novo-keynesiana) + IS + Taylor + UIP + expectativas + admin + hiato HP | **0,20 p.p.** |
+| **Agregado BCB** | Fiel ao RI dez/2021: Phillips com importada R$/PPC/clima assimétrico, IS completa, expectativas com φ2, juro neutra latente (`run_bcb.py`) | comparação vs priors do RI |
 | **Completo** | 3 Phillips setoriais + estado-espaço + cenário condicionado (câmbio PPC, Brent, RONI) + **admin calibrado (B9)** | **0,46 p.p.** |
 | **Completo (bayesiano)** | Phillips + IS + admin conjuntos (PyMC), repasse cambial positivo | 0,60 p.p. |
 
@@ -78,6 +79,8 @@ python scripts/make_figures.py # figuras da documentação
 streamlit run dashboard/app.py # dashboard
 ```
 
+Modelo fiel ao BCB (RI dez/2021): `python modelo-agregado/scripts/run_bcb.py`.
+
 ## Como funciona (fluxo)
 
 ```
@@ -112,7 +115,11 @@ validação vs cenário oficial (RPM) · backtest rolante · long horizon
 - **Admin calibrado (B9)**: estrutura por regra com repasses nos alvos de IRF do anexo
   (câmbio +1,87 / petróleo +1,31 p.p.); o agregado SIDRA de admin não reproduz a cesta
   oficial (~0,1) — o calibrado usa a série oficial como alvo.
-- **Hiato externo**, **pesos pré-2020** e **Nuci/Caged** não determináveis nas fontes públicas.
+- **Canal de inflação importada fraco** na Phillips do RI (coef ~0 na amostra pública) —
+  a decomposição de 2024 atribui menos à importada (0,0 vs 0,72 do ofício 374) e mais ao
+  residual; documentado.
+- **Hiato externo**, **pesos pré-2020**, **Nuci/Caged** e **priors numéricos das 24
+  equações de admin** não determináveis nas fontes públicas.
 
 Detalhes e números atualizados em [`docs/validacao.md`](docs/validacao.md).
 
