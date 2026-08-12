@@ -14,7 +14,8 @@ import pandas as pd
 import streamlit as st
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "output"
+OUT = ROOT / "modelo-agregado" / "output"
+OUT_COMPLETO = ROOT / "modelo-completo" / "output"
 FIG = ROOT / "docs" / "figures"
 
 st.set_page_config(page_title="Modelo BCB — réplica do MPP", layout="wide", page_icon="🇧🇷")
@@ -82,7 +83,7 @@ with tab4:
     st.subheader("Modelo completo (3 Phillips setoriais + estado-espaço)")
     _img("fan_chart_completo.png", "Versão desagregada vs cenário oficial.")
     _img("repasse_cambial.png", "Repasse cambial: choque de +10% USD/BRL por setor.")
-    rp = _load(OUT / "repasse_cambial.csv")
+    rp = _load(OUT_COMPLETO / "repasse_cambial.csv")
     if rp is not None:
         st.dataframe(rp.round(3), use_container_width=True, hide_index=True)
 

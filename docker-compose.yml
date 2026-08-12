@@ -4,8 +4,9 @@ services:
     image: modelo-bcb
     command: run-all
     volumes:
-      - ./output:/app/output
       - ./downloader/data:/app/downloader/data
+      - ./modelo-agregado/output:/app/modelo-agregado/output
+      - ./modelo-completo/output:/app/modelo-completo/output
       - ./docs/figures:/app/docs/figures
     environment:
       - PYTHONUNBUFFERED=1
@@ -17,8 +18,9 @@ services:
     ports:
       - "8501:8501"
     volumes:
-      - ./output:/app/output
       - ./downloader/data:/app/downloader/data
+      - ./modelo-agregado/output:/app/modelo-agregado/output
+      - ./modelo-completo/output:/app/modelo-completo/output
       - ./docs/figures:/app/docs/figures
     environment:
       - PYTHONUNBUFFERED=1
