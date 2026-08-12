@@ -21,13 +21,16 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from data import load_snapshot, build_quarterly  # noqa: E402
 import gap as gap_mod  # noqa: E402
-from phillips_bcb import estimate_phillips_bcb_bayes  # noqa: E402
+from phillips_bcb import estimate_phillips_bcb_bayes, estimate_phillips_bcb  # noqa: E402
 from equacoes_bcb import estimate_is_bcb, estimate_expect_bcb  # noqa: E402
 from estado_espaco_bcb import estimate_neutral_rate  # noqa: E402
 from decomposicao import decompose, decompose_period  # noqa: E402
+from system_bcb import BcbSystem  # noqa: E402
+import equations as eqmod  # noqa: E402
+import rpm as rpm_mod  # noqa: E402
 
 OUT = ROOT / "output"
-RI_P = {"pi_l_1": 0.23756, "imp": 0.01826, "dev_ppc": 0.01727, "gap_1": 0.13866,
+RI_P = {"pi_l_1": 0.23756, "imp_total": 0.01826, "dev_ppc": 0.01727, "gap_1": 0.13866,
         "elnino": 0.00119, "lanina": 0.00104}
 RI_I = {"gap_1": 0.73897, "rreal_gap": 0.54876, "fisc_cc": 0.02985,
         "incert": 0.04073, "us_gap": 0.04342}
@@ -39,15 +42,18 @@ def main() -> None:
     ap.add_argument("--vintage", default="pt_2026Q2")
     ap.add_argument("--draws", type=int, default=400)
     ap.add_argument("--tune", type=int, default=250)
+    ap.add_argument("--horizon", type=int, default=12)
+    ap.add_argument("--gap", choices=["hp", "kalman"], default="kalman",
+                    help="hiato do produto: hp ou kalman (estado-espaço, como o BCB)")
     args = ap.parse_args()
     OUT.mkdir(exist_ok=True)
 
     df = load_snapshot(args.vintage)
     q = build_quarterly(df)
-    q = gap_mod.add_gap(q)
+    q = gap_mod.add_gap_kalman(q) if args.gap == "kalman" else gap_mod.add_gap(q)
     q["gap_1"] = q["gap"].shift(1)
 
-    print("== Estimação BCB (RI dez/2021, priors publicados, amostra 2003T4-2019T4) ==\n")
+    print(f"== Estimação BCB (RI dez/2021, priors publicados, 2003T4-2019T4; hiato {args.gap}) ==\n")
 
     rows = []
     est_p = estimate_phillips_bcb_bayes(q, draws=args.draws, tune=args.tune)
@@ -88,7 +94,6 @@ def main() -> None:
 
     # ---- Decomposição de inflação (P6) ----
     try:
-        from phillips_bcb import estimate_phillips_bcb
         est_p_ols = estimate_phillips_bcb(q)
         dec = decompose_period(q, est_p_ols, "2024Q1", "2024Q4")
         print("\nDECOMPOSIÇÃO 2024 (contribuição ao desvio de livres vs meta, p.p.)")
@@ -97,6 +102,39 @@ def main() -> None:
         dec.to_csv(OUT / "decomposicao_2024.csv", index_label="fator")
     except Exception as e:  # noqa: BLE001
         print(f"\nDECOMPOSIÇÃO: indisponível ({e})")
+
+    # ---- Projeção do agregado BCB com expectativas consistentes (P3/roadmap) ----
+    try:
+        qf = q.copy()
+        qf["incert"] = qf["dln_cambio"].rolling(12, min_periods=8).std()
+        # demais equações (Taylor/UIP/admin) no mesmo padrão do modelo atual
+        est_aux = eqmod.estimate_all(qf)
+        est_full = {
+            "phillips_bcb": est_p, "is_bcb": est_i, "expect_bcb": est_e,
+            "taylor": est_aux["taylor"], "uip": est_aux["uip"], "admin": est_aux["admin"],
+        }
+        sys_b = BcbSystem(est_full, qf)
+        cfg = rpm_mod.load()
+        last_q = qf.index[-1].to_period("Q")
+        nq = last_q + 1
+        eq = nq + (args.horizon - 1)
+        scenario = rpm_mod.scenario_path(cfg, str(nq), str(eq),
+                                         last_oni=float(qf["oni"].dropna().iloc[-1]))
+        fc = sys_b.forecast(horizon=args.horizon, scenario=scenario, expect_mode="consistent")
+        rpm_path = rpm_mod.rpm_ipca_path(cfg)
+        comp = fc.set_index("period")
+        comp.index = pd.PeriodIndex(comp.index, freq="Q")
+        comp = comp.join(rpm_path).sort_index()
+        valid = comp.dropna(subset=["pi4", "rpm_ipca4"])
+        mae = (valid["pi4"] - valid["rpm_ipca4"]).abs().mean()
+        print("\nPROJEÇÃO AGREGADO BCB (expectativas consistentes) vs RPM jun/2026")
+        print(f"  MAE ({len(valid)} trimestres): {mae:.3f} p.p.")
+        print(comp[["pi4", "pi_l", "rpm_ipca4"]].round(2).to_string())
+        comp.to_csv(OUT / "projecao_bcb.csv", index_label="period")
+    except Exception as e:  # noqa: BLE001
+        import traceback
+        print(f"\nPROJEÇÃO: indisponível ({e})")
+        traceback.print_exc()
 
 
 if __name__ == "__main__":

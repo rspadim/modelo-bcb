@@ -30,6 +30,7 @@ class CompleteSystem:
         p_tay = self.est["taylor"]["params"]
         p_uip = self.est["uip"]["params"]
         p_adm = self.est["admin"]["params"]
+        ppc_q = 0.25  # % por trimestre (PPC ~1% a.a.), desvio do câmbio
 
         lastval = lambda c: float(sim[c].dropna().iloc[-1]) if sim[c].notna().any() else float("nan")
         cambio = lastval("cambio")
@@ -86,10 +87,11 @@ class CompleteSystem:
                 gap += shock_gap_pp
 
             sec = {}
+            dev_ppc = dln_c - ppc_q  # câmbio como desvio da PPC (como no BCB)
             for s in ["servicos", "industriais", "alimentacao"]:
                 pp = p[s]
                 sec[s] = (pp["const"] + pp["pi_1"] * state[s] + pp["e_pi_next"] * e
-                          + pp["gap_1"] * state["gap"] + pp["dln_cambio"] * dln_c
+                          + pp["gap_1"] * state["gap"] + pp.get("dev_ppc", pp.get("dln_cambio", 0)) * dev_ppc
                           + pp["pi_com"] * pi_com + pp["oni"] * oni)
 
             pi_l = sec["servicos"] * self.w["servicos"] / self.w_livres \
@@ -99,7 +101,7 @@ class CompleteSystem:
                 pi_a = float(admin_path.loc[period])
             else:
                 pi_a = (p_adm["const"] + p_adm["pi_a_1"] * state["pi_a"]
-                        + p_adm["pi_l_1"] * pi_l + p_adm["dln_cambio"] * dln_c)
+                        + p_adm["pi_l_1"] * pi_l + p_adm.get("dln_cambio", 0) * dln_c)
                 if "dln_brent" in p_adm and np.isfinite(dln_brent):
                     pi_a += p_adm["dln_brent"] * dln_brent
             pi = self.w_livres * pi_l + self.w["admin"] * pi_a

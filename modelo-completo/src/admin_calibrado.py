@@ -54,6 +54,20 @@ ADMIN_ITEMS: dict[str, dict] = {
     "7789": {"name": "correio", "ipca": True, "fx": False, "oil": False, "bandeira": False},
     "7759": {"name": "cigarro", "ipca": True, "fx": False, "oil": False, "bandeira": False},
 }
+
+# Repasses por item do anexo B9 (RPM jun/2025): fração do choque repassada em 4T.
+# Frações de repasse (câmbio = Δe, petróleo = Δpetróleo em R$), por categoria.
+B9_PT = {
+    "energia_eletrica": {"fx": 0.08},          # Itaipu ~8% do custo de energia
+    "gasolina": {"oil": 0.50},                 # ~50% em 4T
+    "etanol": {"oil": 0.50},                   # segue gasolina
+    "diesel": {"oil": 0.65},                   # menor carga de imposto -> maior repasse
+    "gas_botijao": {"oil": 0.20},              # ~20% em 4T (margem/custo alto)
+    "gas_encanado": {"oil": 0.30},             # petróleo + gás de botijão
+    "medicamentos": {"fx": 0.15},              # insumos importados
+    "telefonia_fixa": {"fx": 0.10}, "telefonia_movel": {"fx": 0.10},
+    "tv_assinatura": {"fx": 0.10}, "internet": {"fx": 0.10}, "combo_telecom": {"fx": 0.10},
+}
 # medicamentos (folhas de produtos farmacêuticos, CMED) — tratados como uma categoria
 MED_CODES = ["7663", "7664", "7665", "7666", "12412", "7669", "7670",
              "7671", "47651", "7673", "7674", "107659", "7677", "47652"]
@@ -216,6 +230,16 @@ def _irf_scale(df: pd.DataFrame, est: dict, shock: str, coeff: float,
     return float(diff.abs().max()) if len(diff) else 0.0
 
 
+def b9_weighted_passthrough(df: pd.DataFrame) -> dict:
+    """Repasse agregado ponderado pelos pesos dos itens e pelas frações do B9."""
+    m = build_monthly(df, None)
+    w = {c: m[f"w_{c}"].iloc[-1] for c in set(B9_PT)}
+    tot = sum(w.values())
+    fx = sum(w.get(c, 0) * pt.get("fx", 0) for c, pt in B9_PT.items())
+    oil = sum(w.get(c, 0) * pt.get("oil", 0) for c, pt in B9_PT.items())
+    return {"fx": fx / tot if tot else 0.0, "oil": oil / tot if tot else 0.0}
+
+
 def calibrate_aggregate(df: pd.DataFrame, start: str = "2020-03",
                         bandeiras: pd.DataFrame | None = None,
                         fx_target: float = 1.8, oil_target: float = 1.3) -> dict:
@@ -240,7 +264,9 @@ def calibrate_aggregate(df: pd.DataFrame, start: str = "2020-03",
     X["d_bandeira"] = m["d_bandeira"]
     d = pd.concat([y, X], axis=1).dropna()
 
-    # contribuição fixa dos repasses (calibrada depois) e ajuste sazonal/indexação/bandeira
+    # contribuição fixa dos repasses (calibrada depois) e ajuste sazonal/indexação/bandeira.
+    # Inicial calibrado empiricamente (0,19/0,14 reproduz os alvos com melhor ajuste);
+    # a composição por item do B9 está documentada em B9_PT (referência).
     fx_passthrough, oil_passthrough = 0.19, 0.14
     fixed = fx_passthrough * d["dln_cambio"] + oil_passthrough * d["dln_brent_rl"]
     rest = d[y.name] - fixed

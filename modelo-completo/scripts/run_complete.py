@@ -66,7 +66,7 @@ def main() -> None:
             continue
         print(f"  {s:12s} n={r['n']} R2={r['r2']:.3f} | inércia={r['params']['pi_1']:.2f} "
               f"expect={r['params']['e_pi_next']:.2f} gap={r['params']['gap_1']:.3f} "
-              f"câmbio={r['params']['dln_cambio']:.4f}")
+              f"câmbio(PPC)={r['params']['dev_ppc']:.4f}")
 
     # Demais equações (reutiliza o estimador do modelo agregado)
     est = eqmod.estimate_all(q)
@@ -84,7 +84,7 @@ def main() -> None:
         for s in ["servicos", "industriais", "alimentacao"]:
             r = est["phillips"][s]
             print(f"  {s:12s} inércia={r['params']['pi_1']:.2f} (sd {r['sd']['pi_1']:.2f}) "
-                  f"gap={r['params']['gap_1']:.3f} câmbio={r['params']['dln_cambio']:.4f}")
+                  f"gap={r['params']['gap_1']:.3f} câmbio(PPC)={r['params']['dev_ppc']:.4f}")
         r = est["is"]
         print(f"  is: gap_1={r['params']['gap_1']:.3f} rreal={r['params']['rreal_1']:.3f} "
               f"câmbio={r['params']['dln_cambio']:.4f}")

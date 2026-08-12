@@ -45,6 +45,7 @@ def estimate_bayesian(q: pd.DataFrame, ols: dict, draws: int = 600,
         "pi_l": q["pi_l"], "pi_l_1": q["pi_l"].shift(1),
         "e_next": q["e_pi_next"], "gap": q["gap"], "gap_1": q["gap"].shift(1),
         "gap_2": q["gap"].shift(2), "dln_cambio": q["dln_cambio"],
+        "dev_ppc": q["dln_cambio"] - 0.25,   # câmbio como desvio da PPC (~1% a.a.)
         "pi_com": q["pi_com"], "oni": q["oni"],
         "selic": q["selic"], "selic_1": q["selic"].shift(1),
         "selic_2": q["selic"].shift(2), "ff": q["ff"],
@@ -65,7 +66,7 @@ def estimate_bayesian(q: pd.DataFrame, ols: dict, draws: int = 600,
             p0 = _priors(p_liv[s])
             c = {}
             for k, (mu, sd) in p0.items():
-                if k == "dln_cambio":
+                if k in ("dev_ppc", "dln_cambio"):
                     # repasse cambial imposto positivo (como no modelo do BCB)
                     c[k] = pm.HalfNormal(f"{s}_{k}", sigma=max(sd, 0.1))
                 elif k == "gap_1":
@@ -75,8 +76,9 @@ def estimate_bayesian(q: pd.DataFrame, ols: dict, draws: int = 600,
                 else:
                     c[k] = pm.Normal(f"{s}_{k}", mu=mu, sigma=sd)
             coefs[s] = c
+            camb = c.get("dev_ppc", c.get("dln_cambio"))
             mu = (c["const"] + c["pi_1"] * d[f"{s}_1"] + (1 - c["pi_1"]) * d["e_next"]
-                  + c["gap_1"] * d["gap_1"] + c["dln_cambio"] * d["dln_cambio"]
+                  + c["gap_1"] * d["gap_1"] + camb * d["dev_ppc"]
                   + c["pi_com"] * d["pi_com"] + c["oni"] * d["oni"])
             sigma = pm.HalfNormal(f"sigma_{s}", sigma=1.0)
             pm.Normal(f"y_{s}", mu=mu, sigma=sigma, observed=d[s])

@@ -82,6 +82,10 @@ comparação com as modas a posteriori do BCB:
 
 - **Juro real neutra latente** (Kalman): média **3,6%**, cai de ~5% para ~2% no fim da
   amostra — consistente com a narrativa do BCB.
+- **Projeção do agregado BCB** (`system_bcb.py`): expectativas consistentes (fixed-point)
+  → **MAE vs RPM: 0,60 p.p.** (11 trimestres), estável, convergindo para ~4% ao fim.
+- **Hiato por Kalman**: Phillips hiato 0,05 → **0,27** (RI 0,14); IS enfraquece (AR 0,44)
+  — trade-off documentado.
 - **Decomposição 2024** (vs ofício 374): inércia 0,33 (0,52) · expectativas 0,65 (0,30) ·
   importada 0,00 (0,72) · hiato 0,11 (0,49) · residual 0,69. O canal de inflação
   importada não é identificado pela amostra pública (coef ~0) — limitação documentada.

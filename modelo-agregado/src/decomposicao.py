@@ -24,7 +24,8 @@ def decompose(q: pd.DataFrame, phillips: dict, start: str = "2024Q1",
     """Contribuições trimestrais ao desvio πL − meta (p.p.)."""
     p = phillips["params"]
     d = q.copy()
-    d["imp"] = d["pi_com"].ffill() + d["dln_cambio"]   # ffill da lacuna do IC-Br 2024-25
+    d["imp_total_dev"] = (d["pi_com"].ffill() + d["dln_cambio"]) - meta / 4
+    d["imp_energia"] = np.log(d["brent"] * d["cambio"]).diff() * 100
     d["dev_ppc"] = d["dln_cambio"] - PPC_AA / 4
     d["elnino"] = d["oni"].clip(lower=0)
     d["lanina"] = (-d["oni"]).clip(lower=0)
@@ -32,7 +33,8 @@ def decompose(q: pd.DataFrame, phillips: dict, start: str = "2024Q1",
     d["dev"] = d["pi_l"] - meta / 4                    # desvio trimestral de livres
     d["inercia"] = p["pi_l_1"] * (d["pi_l"].shift(1) - meta / 4)
     d["expect"] = p["e_pi_next"] * (d["e_pi_next"] - meta / 4)
-    d["importada"] = p["imp"] * d["imp"]
+    d["importada"] = (p.get("imp_total", 0.0) * d["imp_total_dev"]
+                      + p.get("imp_energia", 0.0) * d["imp_energia"])
     d["cambio"] = p["dev_ppc"] * d["dev_ppc"]
     d["hiato"] = p["gap_1"] * d["gap_1"]
     d["clima"] = p["elnino"] * d["elnino"] + p["lanina"] * d["lanina"]
