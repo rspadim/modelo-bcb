@@ -39,11 +39,6 @@ def realized_pi4() -> pd.Series:
     return ((q4 - 1) * 100).dropna()
 
 
-def focus_asof_pi4(full: pd.DataFrame) -> pd.DataFrame:
-    """Expectativa Focus acumulado-4T por vintage e trimestre-alvo (não usado agora)."""
-    return pd.DataFrame()
-
-
 def main() -> None:
     OUT.mkdir(exist_ok=True)
     realized = realized_pi4()

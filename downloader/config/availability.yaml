@@ -4,6 +4,7 @@
 #   - IPCA: divulgado em geral no dia 8-10 do mês seguinte -> lag 10 dias
 #   - IBC-Br: divulgado ~45 dias após o mês de referência  -> lag 45 dias
 #   - IC-Br: divulgado no mês seguinte                     -> lag 30 dias
+#   - ONI (NOAA): estação de 3 meses divulgada ~1ª semana do mês seguinte -> lag 10 dias
 #   - Selic / câmbio / EMBI+ / Fed / ONI: conhecidos na data de referência
 #
 # A regra vale por SÉRIE; o que não estiver listado usa `default_lag_days`.
@@ -30,7 +31,7 @@ series:
 
 source_defaults:
   sidra: { lag_days: 10 }
-  noaa:  { lag_days: 0 }
+  noaa:  { lag_days: 10 }
   fred:  { lag_days: 0 }
   ipeadata: { lag_days: 10 }
 

@@ -53,11 +53,13 @@ def noaa_to_frame(payload: dict) -> pd.DataFrame:
         season = str(row["SEAS"]).strip()
         year = int(row["YR"])
         ey, em = _season_end(season, year)
+        # ref_date = FIM do mês final da estação (publicação ocorre ~1ª semana do mês seguinte)
+        end = pd.Timestamp(year=ey, month=em, day=1) + pd.offsets.MonthEnd(0)
         rows.append(
             {
                 "source": "noaa",
                 "series": "oni",
-                "ref_date": f"{ey:04d}-{em:02d}-01",
+                "ref_date": end.isoformat(),
                 "value": row["ANOM"],
                 "total": row["TOTAL"],
             }

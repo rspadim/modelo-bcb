@@ -84,11 +84,12 @@ def build_quarterly(df: pd.DataFrame) -> pd.DataFrame:
     icbr = icbr.where(icbr.notna(), deriv)
     m["icbr"] = icbr
 
-    # ONI (NOAA, trimestral) espalhado sobre os meses do trimestre
+    # ONI (NOAA, trimestral, ref = fim do mês final da estação) espalhado sobre os meses
     oni = df[(df["source"] == "noaa")][["ref_date", "value"]].rename(columns={"value": "oni"})
     oni = oni.set_index("ref_date")["oni"]
     oni = oni.groupby(level=0).last()
-    m["oni"] = oni.reindex(m.index).ffill()
+    m_idx = m.index.to_period("M")
+    m["oni"] = oni.set_axis(oni.index.to_period("M")).reindex(m_idx).ffill().to_numpy()
 
     # Fed Funds (FRED, mensal)
     ff = df[(df["source"] == "fred") & (df["series"] == "fedfunds_monthly")][["ref_date", "value"]]

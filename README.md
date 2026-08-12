@@ -61,6 +61,7 @@ Catálogo completo em `docs/sources.md`.
 - [x] Modelo agregado (hiato HP + OLS + fan chart + comparação RPM + backtest rolante)
 - [x] Modelo completo (3 Phillips setoriais + bloco de 24 admin documentado + estado-espaço/Kalman + repasse cambial)
 - [x] Benchmark vs realizado + Focus + naive
+- [x] Auditoria point-in-time / look-ahead bias (correções aplicadas — ver `docs/validacao.md`)
 - [ ] Transcrição completa dos RPMs históricos (esquema em `config/rpm_historico.csv`, pendente)
 - [ ] IpeaData (setoriais longas) — endpoint instável; setorial usa SIDRA 2020+
 

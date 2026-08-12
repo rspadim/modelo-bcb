@@ -1,5 +1,39 @@
 # Validação — metodologia, métricas e metas de referência
 
+## 0. Auditoria point-in-time e look-ahead bias
+
+Uma auditoria dedicada foi executada sobre todo o pipeline (downloader → snapshots →
+modelos) buscando vazamento de informação futura. Achados corrigidos:
+
+- **C1 — `longhorizon.py`**: o filtro HP do hiato era calculado sobre a série
+  completa (`pt_latest`) e depois fatiado por vintage, contaminando o gap com
+  dados posteriores ao corte. **Corrigido**: o hiato agora é recalculado com
+  dados apenas até cada vintage.
+- **C2 — ONI (NOAA)**: a estação de 3 meses entrava no snapshot com lag zero
+  (disponível ~1 mês antes da publicação real). **Corrigido**: `ref_date` = fim do
+  mês final da estação + `lag_days: 10`.
+
+Invariantes verificados em execução: em `pt_2026Q2` (cutoff 30/06/2026), 100% das
+linhas satisfazem `ref_date ≤ cutoff` e `available_from ≤ cutoff`; a última pesquisa
+Focus no snapshot é 30/06/2026; nenhum exógeno da projeção usa valor posterior ao
+cutoff; os modelos estimam somente com `snapshots/pt_<vintage>/`.
+
+Caveats remanescentes (documentados, não são vazamento):
+
+- **M1 — IC-Br com lacuna 2024H2–2025Q3** (série nova `28451` tem buraco): a Phillips
+  agregada é estimada até 2024Q2, excluindo o ciclo de aperto de 2024–25. No modelo
+  completo, `pi_com` é preenchido com ffill (regressor ~constante pós-gap).
+- **M2/M4 — timing da comparação 2026Q2**: o snapshot `pt_2026Q2` só tem IPCA até
+  mai/2026 (junho sairia 10/07), então a base termina em 2026Q1 e o "1º trimestre"
+  da projeção (2026Q2) mistura previsão com nowcast. O RPM já conhecia abr–mai.
+- **M3 — condicionamento exógeno incompleto**: a projeção condiciona apenas a Selic
+  ao cenário do RPM; `pi_com`, `oni`, `fiscal` e câmbio seguem flat no último valor
+  realizado (o cenário assume El Niño forte e Brent 90–100). A comparação com o RPM
+  reflete também essa diferença de condicionantes.
+- **M5 — filtros bidirecionais**: HP e Kalman usam suavização dentro da amostra de
+  cada vintage (método declarado, análogo à prática do BCB); para strict real-time
+  seria necessário versões recursivas (one-sided).
+
 ## 1. Duas formas de medir o erro
 
 **A) Aderência ao cenário oficial (projeção 2026Q2 → 2029Q2).**
