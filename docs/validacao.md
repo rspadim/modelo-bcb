@@ -186,17 +186,21 @@ Planejado: transcrever o cenário de referência de cada RPM (2019Q1–2026Q1) p
 cada vintage. **Status**: esquema criado; transcrição pendente (extração manual de
 ~30 PDFs). O benchmark Focus/naive do backtest já cobre a comparação com o mercado.
 
-## 8. Como reproduzir
+## 8. Como reproduzir (modelo único integrado)
 
 ```bash
 python downloader/scripts/01_download.py
 python downloader/scripts/02_build_dataset.py
-python modelo-agregado/scripts/run_aggregate.py     # projeção + fan chart + comparação
-python modelo-agregado/scripts/backtest.py          # backtest rolante
-python modelo-completo/scripts/run_complete.py      # setorial (--est bayes p/ bayesiana)
-python modelo-completo/scripts/irf_and_risk.py      # IRFs + balanço de riscos + fan chart paramétrico
-python modelo-completo/scripts/validate_sector.py   # validação da setorização
-python modelo-integrado/scripts/run_integrado.py    # MODELO BCB (conjunta plena) — o modelo principal
+python modelo-integrado/scripts/run_integrado.py   # MODELO BCB (conjunta plena) — projeção + IRFs
+python modelo-integrado/scripts/backtest.py        # backtest rolante PIT (29 vintages)
+python modelo-integrado/scripts/longhorizon.py     # MAE 1T/4T
+python modelo-integrado/scripts/decomposicao.py    # decomposição 2024 vs ofício 374
+python scripts/make_figures.py                     # figuras da documentação
 ```
 
-Saídas em `*/output/`: tabelas CSV, fan charts e gráficos de erro.
+Rodada oficial (com g++): `docker compose run pipeline` (equivalente a `python main.py`).
+Saídas em `modelo-integrado/output/` e `docs/figures/`.
+
+> **Nota histórica**: as versões parciais anteriores (`modelo-agregado`, `modelo-completo`)
+> foram removidas ao convergir para o modelo único. Seus resultados: agregado MAE 0,20,
+> completo 0,46, backtest agregado 1,83, admin calibrado (IRFs 1,86/1,30).

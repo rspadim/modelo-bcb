@@ -75,17 +75,19 @@ def estimar_conjunta(q: pd.DataFrame, start: str = "2003Q4", end: str = "2019Q4"
         a4 = pm.TruncatedNormal("a4", mu=0.14, sigma=0.1, lower=0, upper=1)
         a5 = pm.Uniform("a5", 0, 0.01)
         a6 = pm.Uniform("a6", 0, 0.01)
-        b1 = pm.TruncatedNormal("b1", mu=0.74, sigma=0.2, lower=0, upper=1)
+        b1 = pm.TruncatedNormal("b1", mu=0.74, sigma=0.1, lower=0, upper=1)
         b2 = pm.Uniform("b2", 0, 2)
         ldesoc = pm.Normal("ldesoc", -0.3, 0.15)
         mdesoc = pm.Normal("mdesoc", 10.0, 2.0)
-        sg = pm.HalfNormal("sg", 0.5)
+        sg = pm.HalfNormal("sg", 0.2)      # amortecido: hiato na escala do BCB (~±1%)
         si = pm.HalfNormal("si", 0.5)
         sd = pm.HalfNormal("sd", 0.5)
         sp = pm.HalfNormal("sp", 0.6)
+        gibc = pm.Normal("gibc", 0.5, 0.2)  # loading do ciclo na observação de IBC (<1)
 
-        # latentes: juro neutra (passeio aleatório lento)
+        # latentes: juro neutra (passeio aleatório lento) + crescimento potencial flexível
         rbar = pm.GaussianRandomWalk("rbar", sigma=SIGMA_R, init_dist=pm.Normal.dist(0, 1), shape=n)
+        trend = pm.GaussianRandomWalk("trend", sigma=0.5, init_dist=pm.Normal.dist(0, 0.5), shape=n)
 
         # hiato AR(1) com drift da IS (loop Python sobre n ~ 64 é barato simbolicamente)
         g0 = pm.Normal("g0", 0, 1)
@@ -96,8 +98,8 @@ def estimar_conjunta(q: pd.DataFrame, start: str = "2003Q4", end: str = "2019Q4"
         g = pm.Deterministic("gap", pm.math.stack(g_list))
 
         # observações
-        pm.Normal("obs_ibc", mu=g - pm.math.concatenate([[g0], g[:-1]]), sigma=si,
-                  observed=dl)
+        pm.Normal("obs_ibc", mu=trend + gibc * (g - pm.math.concatenate([[g0], g[:-1]])),
+                  sigma=si, observed=dl)
         pm.Normal("obs_desoc", mu=mdesoc + ldesoc * g, sigma=sd, observed=desoc)
         mu_pi = (a1 * pil1 + (1 - a1) * E + a2 * imp + a3 * dev
                  + a4 * pm.math.concatenate([[g0], g[:-1]]) + a5 * en + a6 * la)
@@ -113,6 +115,7 @@ def estimar_conjunta(q: pd.DataFrame, start: str = "2003Q4", end: str = "2019Q4"
               "a5": post("a5"), "a6": post("a6"),
               "b1": post("b1"), "b2": post("b2"),
               "ldesoc": post("ldesoc"), "mdesoc": post("mdesoc"),
+              "gibc": post("gibc"),
               "sg": post("sg"), "si": post("si"), "sd": post("sd"), "sp": post("sp")}
     gap_post = trace.posterior["gap"].values.mean(axis=(0, 1))
     rbar_post = trace.posterior["rbar"].values.mean(axis=(0, 1)) + 5.0

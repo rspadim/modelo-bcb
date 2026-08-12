@@ -10,19 +10,16 @@
                             └────────────┬────────────┘
                                          │  data/snapshots/pt_<YYYYQn>/
                                          ▼
-                 ┌───────────────────────┴──────────────────────┐
-                 ▼                                              ▼
-      modelo-agregado/                                modelo-completo/
-      hiato HP + OLS + fan chart                      3 Phillips setoriais + 24 eq.
-      + comparação com o RPM                          admin + Kalman + backtest
+                              modelo-integrado/
+                              estimação bayesiana conjunta (PyMC):
+                              hiato + juro neutra latentes + Phillips/IS/expectativas
+                              sistema único → projeção → IRFs · backtest PIT · decomposição
 ```
 
-A divisão em duas pastas de modelo é intencional:
+É **um único modelo** (não há modelos paralelos). As versões parciais anteriores
+(`modelo-agregado`, `modelo-completo`) foram removidas ao convergir.
 
-- **modelo-agregado** — réplica enxuta (Phillips agregada de livres + admin agregado + IS + Taylor + UIP + expectativas, hiato por filtro HP). Serve para validar o esqueleto e para comparar a projeção com o cenário oficial do RPM (ver `docs/validacao.md`).
-- **modelo-completo** — réplica do sistema divulgado: inflação livre desagregada em serviços / bens industriais / alimentação no domicílio, bloco de 24 equações de administrados, hiato e juro neutro por estado-espaço (filtro de Kalman) e backtest rolante por vintage.
-
-Ambos **leem exclusivamente** `downloader/data/snapshots/pt_<vintage>/`. Nenhum modelo toca os dados brutos diretamente — a porta de entrada é o corte point-in-time.
+O modelo **lê exclusivamente** `downloader/data/snapshots/pt_<vintage>/`. Nenhum modelo toca os dados brutos diretamente — a porta de entrada é o corte point-in-time.
 
 ## downloader
 

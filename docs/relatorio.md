@@ -133,7 +133,7 @@ docker compose run pipeline    # tudo em 1 comando
 python main.py                 # sem Docker
 ```
 
-Etapas: `01_download` → `02_build` → `run_aggregate` → `backtest` → `longhorizon` → `run_complete` → `validate_sector` → `irf_and_risk` → `make_figures`.
+Etapas: `01_download` → `02_build` → `run_integrado` → `backtest_integrado` → `longhorizon` → `decomposicao` → `make_figures` (ver `docs/validacao.md` §8).
 
 ## 11. Diferenças em relação ao modelo interno do BCB
 

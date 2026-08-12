@@ -18,8 +18,7 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
-for p in [ROOT / "src", ROOT.parent / "modelo-agregado" / "src", ROOT.parent / "modelo-completo"]:
-    sys.path.insert(0, str(p))
+sys.path.insert(0, str(ROOT / "src"))
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -31,7 +30,7 @@ from estimador_conjunto import estimar_conjunta  # noqa: E402
 from sistema import SistemaIntegrado  # noqa: E402
 from equacoes_bcb import estimate_is_bcb, estimate_expect_bcb, _hp_cycle  # noqa: E402
 from phillips_bcb import estimate_phillips_bcb_bayes  # noqa: E402
-from src import spec_manifesto as spec_man  # noqa: E402
+import spec_manifesto as spec_man  # noqa: E402
 import equations as eqmod  # noqa: E402
 import rpm as rpm_mod  # noqa: E402
 
@@ -121,13 +120,31 @@ def main() -> None:
                                  shock_gap_pp=-1.0)
     irf_cam = sys_integ.forecast(horizon=args.horizon, scenario=scenario, expect_mode=args.expect,
                                  shock_cambio_pp=10.0)
+    irf_selic = sys_integ.forecast(horizon=args.horizon,
+                                   scenario=scenario.assign(selic=scenario["selic"] + 1.0),
+                                   expect_mode=args.expect)
     d_gap = irf_gap["pi4"] - base["pi4"]
     d_cam = irf_cam["pi4"] - base["pi4"]
+    d_selic = irf_selic["pi4"] - base["pi4"]
     print("\nIRFs (Δ p.p. IPCA 4T) vs RI dez/2021:")
     print(f"  demanda −1 p.p. (hiato): pico {d_gap.abs().max():.3f} p.p. (RI: −0,45)")
     print(f"  câmbio +10%: pico {d_cam.abs().max():.3f} p.p.")
-    pd.DataFrame({"demanda": d_gap, "cambio": d_cam}).to_csv(OUT / "irfs_integradas.csv",
-                                                              index_label="period")
+    print(f"  Selic +1 p.p.: pico {d_selic.abs().max():.3f} p.p.")
+    pd.DataFrame({"demanda": d_gap, "cambio": d_cam, "selic": d_selic}).to_csv(
+        OUT / "irfs_integradas.csv", index_label="period")
+
+    # ---- Convergência (R-hat) ----
+    if args.est == "conjunta" and "_trace" in res:
+        import arviz as az
+        rhat_ds = az.rhat(res["_trace"])
+        bad = []
+        for name in rhat_ds.data_vars:
+            val = float(rhat_ds[name].values.reshape(-1)[0])
+            if val > 1.05:
+                bad.append(str(name))
+        print(f"\nR-hat: params com rhat>1.05: {bad if bad else 'nenhum'}")
+        if bad:
+            print("  (convergência insatisfatória — aumentar tune ou ancorar priors)")
 
     # ---- hiato/neutra suavizados para inspeção ----
     gap_s.to_frame("gap").to_csv(OUT / "hiato_integrado.csv", index_label="period")

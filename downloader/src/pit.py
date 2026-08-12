@@ -54,6 +54,11 @@ def apply_availability(df: pd.DataFrame, avail: dict) -> pd.DataFrame:
     """Adiciona coluna `available_from` (datetime) a um DataFrame longo
     com colunas: source, series, ref_date."""
     out = df.copy()
+    # garante dtype object (evita string[pyarrow] inferido em alguns ambientes, que
+    # quebra ao atribuir Timestamps)
+    for col in ["ref_date", "survey_date"]:
+        if col in out.columns:
+            out[col] = out[col].astype(object)
     is_focus = out["source"] == "focus"
     out.loc[is_focus, "ref_date"] = out.loc[is_focus].apply(
         lambda r: _parse_focus_ref(r["series"], r["ref_date"]), axis=1

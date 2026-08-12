@@ -13,6 +13,12 @@ from pathlib import Path
 
 import pandas as pd
 
+# desativa inferência de string[pyarrow] (incompatível com a lógica PIT em alguns ambientes)
+try:
+    pd.set_option("future.infer_string", False)
+except Exception:  # noqa: BLE001
+    pass
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src import focus as focus_mod
@@ -96,6 +102,10 @@ def _load_all(cfg, series_cfg, dirs) -> pd.DataFrame:
 
 
 def _snapshot(frame: pd.DataFrame, cutoff: pd.Timestamp) -> pd.DataFrame:
+    frame = frame.copy()
+    # forçam Timestamp (robusto a valores não parseados / ambientes diferentes)
+    frame["ref_date"] = pd.to_datetime(frame["ref_date"], errors="coerce")
+    frame["available_from"] = pd.to_datetime(frame["available_from"], errors="coerce")
     return frame[(frame["ref_date"] <= cutoff) & (frame["available_from"] <= cutoff)]
 
 
@@ -109,6 +119,10 @@ def main() -> None:
     frame["value"] = pd.to_numeric(frame["value"], errors="coerce")
     frame = pit.apply_availability(frame, avail)
     frame = frame.dropna(subset=["ref_date"])
+    # colunas de texto: converte via object (evita o backend string[pyarrow], que falha
+    # no write do parquet com valores ausentes em alguns ambientes)
+    for col in frame.select_dtypes(include=["object", "string"]).columns:
+        frame[col] = frame[col].astype(object).fillna("").astype(str)
     frame = frame.sort_values(["source", "series", "ref_date"]).reset_index(drop=True)
 
     frame.to_parquet(dirs["processed"] / "series.parquet", index=False)

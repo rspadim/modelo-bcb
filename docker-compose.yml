@@ -5,8 +5,6 @@ services:
     command: run-all
     volumes:
       - ./downloader/data:/app/downloader/data
-      - ./modelo-agregado/output:/app/modelo-agregado/output
-      - ./modelo-completo/output:/app/modelo-completo/output
       - ./modelo-integrado/output:/app/modelo-integrado/output
       - ./docs/figures:/app/docs/figures
     environment:
@@ -20,8 +18,6 @@ services:
       - "8501:8501"
     volumes:
       - ./downloader/data:/app/downloader/data
-      - ./modelo-agregado/output:/app/modelo-agregado/output
-      - ./modelo-completo/output:/app/modelo-completo/output
       - ./modelo-integrado/output:/app/modelo-integrado/output
       - ./docs/figures:/app/docs/figures
     environment:

@@ -1,5 +1,6 @@
 # Dependências do projeto (pipeline + dashboard).
-pandas>=2.0
+# pandas <3: a 3.0 usa string[pyarrow] por padrão e quebra a lógica PIT/comparações.
+pandas>=2.0,<3.0
 numpy>=1.24
 statsmodels>=0.14
 requests>=2.31

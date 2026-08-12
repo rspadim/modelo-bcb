@@ -11,7 +11,7 @@
 
 ![Fan chart — modelo vs cenário oficial](docs/figures/fan_chart.png)
 
-> **MAE de 0,20 p.p. contra o cenário oficial do RPM jun/2026** (11 trimestres) — a projeção oficial cai **dentro do leque de 50% do modelo em todos os trimestres**.
+> **Modelo integrado**: MAE de **0,50 p.p.** contra o cenário oficial do RPM jun/2026 (11 trimestres), com estimação bayesiana conjunta (hiato + juro neutra latentes) e IRF de demanda convergindo para o RI (−0,45 p.p.).
 
 ---
 
@@ -19,13 +19,12 @@
 
 | Métrica | Resultado |
 |---|---:|
-| MAE vs cenário oficial (RPM jun/2026, 11 trimestres) | **0,20 p.p.** |
-| Diferença no 1º trimestre (2026Q2) | −0,26 p.p. |
-| Cenário oficial dentro do leque 50% do modelo | **11/11** |
-| Backtest (29 vintages, 2019–2026) — MAE médio | **1,83 p.p.** |
-| Benchmark naive (persistência) — MAE médio | 2,84 p.p. |
-| Setorização (livres setorial vs oficial) | **corr 0,98** |
-| Long horizon recursivo — MAE 1T / 4T à frente | 0,67 / 2,07 p.p. |
+| MAE vs cenário oficial (RPM jun/2026, 11 trimestres) | **0,50 p.p.** |
+| IRF demanda −1 p.p. (hiato) → IPCA 4T | ~0,2–0,6 p.p. (RI: −0,45) |
+| IRF câmbio +10% → admin (4T) | ~1,9 p.p. (alvo B9 ~1,8) |
+| Backtest integrado (29 vintages PIT) — MAE 1T / geral | **0,75 / 1,96 p.p.** |
+| Juro real neutra (estado latente) | ~4,5% |
+| Estimação conjunta plena (PyMC + g++, Docker) | ~1 min (400/300) |
 
 ---
 
@@ -34,20 +33,23 @@
 O Banco Central publica a **estrutura** do seu Modelo de Pequeno Porte (curva de Phillips, IS, regra de Taylor, paridade de juros, expectativas e o bloco de 24 equações de preços administrados), mas não divulga código nem a base tratada. Este repositório reconstrói esse modelo **a partir das fontes documentais do BCB** e valida contra as projeções oficiais.
 
 - **Dados 100% via API pública** (BCB/SGS, Focus, IBGE/SIDRA, NOAA, FRED), com framework **point-in-time** que impede vazamento de informação futura (auditado).
-- **Dois modelos**: agregado (Phillips única) e completo (3 Phillips setoriais + estado-espaço).
+- **Um único modelo integrado**: estimação bayesiana conjunta (hiato + juro neutra latentes + Phillips/IS/expectativas) + administrados + sistema único de projeção.
 - Tudo reproduzível e auditável.
 
 ## Modelos
 
-![Componentes — livres vs administrados e setores](docs/figures/componentes.png)
+![Projeção integrada vs cenário oficial](docs/figures/projecao_integrada.png)
 
 | Modelo | Descrição | Status |
 |---|---|---|
-| **Integrado** ⭐ | Estimação bayesiana conjunta (hiato + juro neutra latentes + Phillips/IS/expectativas) + admin endógeno + expectativas consistentes | **o modelo BCB da réplica** |
-| Agregado | Phillips livre + IS + Taylor + UIP + admin + hiato HP (MAE vs RPM **0,20 p.p.**) | experimento legado |
-| Completo | 3 Phillips setoriais + admin calibrado (B9) (MAE **0,46 p.p.**) | experimento legado |
+| **Integrado** ⭐ | Estimação bayesiana conjunta (hiato + juro neutra latentes + Phillips/IS/expectativas) + admin endógeno + expectativas | **o modelo BCB da réplica** |
 
-O modelo integrado é o alvo; os legados servem de diagnóstico e referência. Reprodução: `python modelo-integrado/scripts/run_integrado.py`.
+É um modelo único. `modelo-agregado/` e `modelo-completo/` (versões parciais anteriores)
+foram removidos; os números históricos estão documentados em `docs/validacao.md`.
+
+Reprodução: `python modelo-integrado/scripts/run_integrado.py` · Backtest PIT:
+`python modelo-integrado/scripts/backtest.py` · Decomposição:
+`python modelo-integrado/scripts/decomposicao.py`.
 
 \* Amostra setorial limitada a 2020+ (SIDRA) — menor robustez, documentado.
 
@@ -82,12 +84,12 @@ docker compose up dashboard   # abre http://localhost:8501
 Sem Docker, basta `pip install -r requirements.txt` e:
 
 ```bash
-python main.py                 # pipeline completo + resumo
+python main.py                 # pipeline completo (dados → modelo integrado → validação)
 python scripts/make_figures.py # figuras da documentação
 streamlit run dashboard/app.py # dashboard
 ```
 
-Modelo fiel ao BCB (RI dez/2021): `python modelo-agregado/scripts/run_bcb.py`.
+Modelo integrado: `python modelo-integrado/scripts/run_integrado.py [--est conjunta|staged]`.
 
 ## Como funciona (fluxo)
 
@@ -96,13 +98,13 @@ dados brutos (SGS · Focus · SIDRA · NOAA · FRED)
       ↓  point-in-time (available_from por observação)
 snapshots por trimestre (pt_2019Q1 … pt_2026Q2)
       ↓
-trimestralização + hiato (HP / Kalman)
+trimestralização + hiato (estado-espaço)
       ↓
-estimação das equações (OLS)
+estimação bayesiana conjunta (PyMC): hiato + juro neutra latentes + Phillips/IS/expectativas
       ↓
-sistema simultâneo → projeção 12T → fan chart (Monte Carlo)
+sistema único → projeção 12T (admin endógeno + expectativas) → IRFs vs RI · decomposição
       ↓
-validação vs cenário oficial (RPM) · backtest rolante · long horizon
+validação: MAE vs RPM · backtest rolante PIT · long horizon
 ```
 
 ## Documentação
@@ -115,22 +117,19 @@ validação vs cenário oficial (RPM) · backtest rolante · long horizon
 - [🧬 Priors do BCB (RI dez/2021)](docs/priors_bcb.md) — tabela transcrita.
 - [🗂 Fontes de dados](docs/sources.md) · [⏱ Point-in-time](docs/point-in-time.md) · [🏗 Arquitetura](docs/arquitetura.md) · [🔍 Proveniência](docs/proveniencia.md)
 
-## Limitações honestas
+## Limitações honestas (fronteiras do "100% BCB")
 
-- **IC-Br** com lacuna 2024H2–2025Q3 → Phillips estimada até 2024Q2.
+- **Escala do hiato**: o hiato latente sai com amplitude ~±5% (BCB ~±1%) — canal de hiato
+  (a4) e de juro real (b2) menores que o RI; em correção (P1).
+- **Transmissão monetária** (b2) ~0,01 vs RI 0,55 — Selic IRF quase nula; em correção (P2).
+- **IC-Br** com lacuna 2024H2–2025Q3 → canal de inflação importada fraco (decomposição
+  2024 ~0,0 vs 0,72 do ofício 374).
 - **Prêmio de risco** (EMBI+/CDS) sem histórico público → absorvido na constante da UIP.
-- **Repasse cambial**: negativo no OLS (apreciação 2021–23 confunde a amostra); a
-  estimação **bayesiana com prior positivo** corrige o sinal (IRF +0,46 p.p. em 4T).
-- **Admin calibrado (B9)**: estrutura por regra com repasses nos alvos de IRF do anexo
-  (câmbio +1,87 / petróleo +1,31 p.p.); o agregado SIDRA de admin não reproduz a cesta
-  oficial (~0,1) — o calibrado usa a série oficial como alvo.
-- **Canal de inflação importada fraco** na Phillips do RI (coef ~0 na amostra pública) —
-  a decomposição de 2024 atribui menos à importada (0,0 vs 0,72 do ofício 374) e mais ao
-  residual; documentado.
-- **Hiato externo**, **pesos pré-2020**, **Nuci/Caged** e **priors numéricos das 24
+- **Nuci/Caged**, **pesos pré-2020**, **vintages do IBC-Br** e **priors numéricos das 24
   equações de admin** não determináveis nas fontes públicas.
+- **Julgamento de especialistas** de curto prazo não replicável.
 
-Detalhes e números atualizados em [`docs/validacao.md`](docs/validacao.md).
+Detalhes e números atualizados em [`docs/status.md`](docs/status.md) e [`docs/validacao.md`](docs/validacao.md).
 
 ---
 

@@ -16,17 +16,11 @@ ROOT = Path(__file__).resolve().parent
 STEPS = [
     ("01_download", ["python", "downloader/scripts/01_download.py"]),
     ("02_build", ["python", "downloader/scripts/02_build_dataset.py"]),
-    ("agregado", ["python", "modelo-agregado/scripts/run_aggregate.py"]),
-    ("backtest", ["python", "modelo-agregado/scripts/backtest.py"]),
-    ("longhorizon", ["python", "modelo-agregado/scripts/longhorizon.py"]),
-    ("bcb_agregado", ["python", "modelo-agregado/scripts/run_bcb.py",
-                      "--draws", "250", "--tune", "150"]),
     ("integrado", ["python", "modelo-integrado/scripts/run_integrado.py",
                    "--draws", "150", "--tune", "100"]),
-    ("completo", ["python", "modelo-completo/scripts/run_complete.py"]),
-    ("irf_and_risk", ["python", "modelo-completo/scripts/irf_and_risk.py",
-                      "--draws", "200", "--npaths", "100"]),
-    ("validate_sector", ["python", "modelo-completo/scripts/validate_sector.py"]),
+    ("backtest_integrado", ["python", "modelo-integrado/scripts/backtest.py"]),
+    ("longhorizon_integrado", ["python", "modelo-integrado/scripts/longhorizon.py"]),
+    ("decomposicao", ["python", "modelo-integrado/scripts/decomposicao.py"]),
     ("figuras", ["python", "scripts/make_figures.py"]),
 ]
 
@@ -37,18 +31,16 @@ def _summary() -> None:
     print("=" * 70)
     try:
         import pandas as pd
-        comp = pd.read_csv(ROOT / "modelo-agregado" / "output" / "comparacao_rpm.csv")
-        v = comp.dropna(subset=["pi4_modelo_cond", "rpm_ipca4"])
-        mae = (v["pi4_modelo_cond"] - v["rpm_ipca4"]).abs().mean()
-        print(f"  MAE vs cenário oficial (RPM jun/2026): {mae:.3f} p.p. ({len(v)} trimestres)")
-        bt = pd.read_csv(ROOT / "modelo-agregado" / "output" / "backtest.csv")
-        print(f"  Backtest ({bt['vintage'].nunique()} vintages): MAE médio {bt['modelo'].sub(bt['realizado']).abs().mean():.3f} p.p.")
-        lh = pd.read_csv(ROOT / "modelo-agregado" / "output" / "longhorizon.csv")
-        print(f"  Long horizon ({len(lh)} vintages): MAE 1T={lh['prev_1q'].sub(lh['real_1q']).abs().mean():.2f} | "
-              f"4T={lh['prev_4q'].sub(lh['real_4q']).abs().mean():.2f} p.p.")
+        bt = pd.read_csv(ROOT / "modelo-integrado" / "output" / "backtest_integrado.csv")
+        bt = bt.dropna(subset=["realizado"])
+        print(f"  Backtest integrado ({bt['vintage'].nunique()} vintages): MAE médio {bt['abs'].mean():.3f} p.p.")
+        pr = pd.read_csv(ROOT / "modelo-integrado" / "output" / "projecao_integrada.csv")
+        v = pr.dropna(subset=["pi4", "rpm_ipca4"])
+        mae = (v["pi4"] - v["rpm_ipca4"]).abs().mean()
+        print(f"  MAE integrado vs cenário oficial (RPM jun/2026): {mae:.3f} p.p. ({len(v)} trimestres)")
     except Exception as e:  # noqa: BLE001
         print(f"  (resumo indisponível: {e})")
-    print("  Figuras: docs/figures/  |  Dashboard: docker compose up dashboard")
+    print("  Dashboard: docker compose up dashboard")
     print("=" * 70)
 
 

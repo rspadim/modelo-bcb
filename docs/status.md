@@ -2,9 +2,9 @@
 
 **Leia primeiro**: este repositório é uma *réplica pública em construção* do Modelo de
 Pequeno Porte (MPP) do Banco Central do Brasil. O **único** componente chamado de
-"modelo BCB" daqui em diante é o **modelo integrado** (`modelo-integrado/`). As pastas
-`modelo-agregado/` e `modelo-completo/` são **experimentos/legado** — aproximações
-parciais que serviram para fechar peças, mas **não** são o modelo BCB.
+"modelo BCB" é o **modelo integrado** (`modelo-integrado/`). As versões parciais
+anteriores (`modelo-agregado/` e `modelo-completo/`) foram **removidas** — seus números
+ficam registrados como histórico em `docs/validacao.md`.
 
 ## O que o modelo integrado reproduz (estrutura do RI dez/2021, boxe b7)
 
@@ -38,21 +38,27 @@ parciais que serviram para fechar peças, mas **não** são o modelo BCB.
 
 | Validação | Réplica integrada | Alvo (BCB) |
 |---|---|---|
-| IRF demanda −1 p.p. (hiato) → IPCA 4T | ~0,22 (híbrido) / ~0,6 (consistente) p.p. | −0,45 p.p. |
+| IRF demanda −1 p.p. (hiato) → IPCA 4T | ~0,25 p.p. (híbrido) / ~0,6 (consistente) | −0,45 p.p. |
 | IRF câmbio +10% → admin (4T) | ~1,9 p.p. | ~1,8 p.p. |
+| IRF Selic +1 p.p. | ~0,02 p.p. (transmissão fraca) | não nula |
 | MAE vs RPM jun/2026 | **~0,50 p.p.** (expectativas híbridas) | — |
-| Juro real neutra (estado) | média ~4,5% | ~3,6% (2021) |
+| Juro real neutra (estado) | média ~5% | ~3,6% (2021) |
 | Decomposição 2024 (importada) | ~0,0 (canal fraco na amostra pública) | 0,72 p.p. |
+| Backtest integrado (29 vintages PIT) | MAE 1T **0,75** · geral **1,96** p.p. | — |
 
 > **Notas de estabilidade/PIT** (auditoria agressiva):
 > - **Expectativas**: o componente consistente (φ2) NÃO é estimado com `pi.shift(-1)`
 >   (look-ahead de 1T); φ2 é fixado no valor do RI (0,12) e φ1/φ3 são estimados com
 >   priors ancorados no RI. A projeção usa por padrão **expectativas híbridas ancoradas
 >   à meta** (`--expect hybrid`, estável); o modo `--expect consistent` (fixed-point φ2)
->   diverge neste modelo (hiato quase unitário, b1≈0,96) — documentado.
-> - **Convergência**: a conjunta plena com `--est conjunta` roda no Docker (g++, ~1 min
->   para 400/300); alguns parâmetros têm R-hat > 1,01 — priors ancorados em b1/a4
->   ajudam, mas os dados puxam b1≈0,96.
+>   diverge neste modelo (hiato quase unitário, b1≈0,93) — documentado.
+> - **Escala do hiato (P1)**: reestimação com crescimento potencial latente + loading
+>   `gibc` + prior em σ_g NÃO reduziu a amplitude do ciclo (~±6% vs ~±1% do BCB); os
+>   dados públicos identificam o hiato com essa amplitude. Consequência: a4 (~0,06 vs
+>   0,14) e b2 (~0,02 vs 0,55) e as IRFs de demanda/Selic ficam abaixo do RI — teto
+>   honesto da reestimação sem os dados internos do BCB.
+> - **Convergência**: a conjunta plena roda no Docker (g++, ~1 min p/ 400/300); R-hat >
+>   1,05 apenas no estado `rbar` (juro neutra) — aumentar tune ajuda.
 
 > A convergência para o BCB "oficial" esbarra em três fronteiras que não são de modelagem:
 > dados (Nuci/Caged, CDS, vintages), julgamento de especialistas e parâmetros internos
