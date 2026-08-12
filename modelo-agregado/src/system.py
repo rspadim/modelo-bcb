@@ -4,7 +4,10 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from . import meta as meta_mod
+try:
+    from . import meta as meta_mod
+except ImportError:
+    import meta as meta_mod
 
 W_LIVRES = 0.76
 

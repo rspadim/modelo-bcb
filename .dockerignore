@@ -1,0 +1,11 @@
+# dados locais (não entram na imagem — baixados em runtime pelo pipeline)
+downloader/data/
+output/
+docs/figures/
+*.png
+.git/
+.gitignore
+__pycache__/
+*.pyc
+.venv/
+venv/

@@ -1,0 +1,24 @@
+services:
+  pipeline:
+    build: .
+    image: modelo-bcb
+    command: run-all
+    volumes:
+      - ./output:/app/output
+      - ./downloader/data:/app/downloader/data
+      - ./docs/figures:/app/docs/figures
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  dashboard:
+    image: modelo-bcb
+    build: .
+    command: streamlit
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./output:/app/output
+      - ./downloader/data:/app/downloader/data
+      - ./docs/figures:/app/docs/figures
+    environment:
+      - PYTHONUNBUFFERED=1

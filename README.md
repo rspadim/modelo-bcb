@@ -1,93 +1,112 @@
-# Modelo BCB — réplica do Modelo de Pequeno Porte em Python
+# 🇧🇷 Modelo BCB — réplica do Modelo de Pequeno Porte em Python
 
-Reconstrução pública do **modelo semiestrutural de pequeno porte (MPP) do Banco Central do Brasil**, em Python, com dados coletados por API e um framework **point-in-time** que impede vazamento de informação futura nas projeções.
+**Reconstrução pública do modelo de projeção de inflação do Banco Central do Brasil (MPP)**, com dados point-in-time, equações estimadas, backtest e comparação com o cenário oficial.
 
-Reconstruído **diretamente das fontes documentais do BCB** (Relatório de Política Monetária e seus anexos — especificação do modelo e das equações) e validado contra as projeções oficiais publicadas.
+![Fan chart — modelo vs cenário oficial](docs/figures/fan_chart.png)
 
-## Estrutura
+> **MAE de 0,20 p.p. contra o cenário oficial do RPM jun/2026** (11 trimestres) — a projeção oficial cai **dentro do leque de 50% do modelo em todos os trimestres**.
 
-```
-modelo-bcb/
-├── downloader/            # coleta e preparação dos dados (compartilhada)
-│   ├── config/            # códigos SGS, regras PIT, settings
-│   ├── src/               # clientes: SGS, Focus, SIDRA, FRED, NOAA + motor PIT
-│   ├── scripts/           # 01_download.py · 02_build_dataset.py
-│   └── data/              # raw/ (cache) · processed/ · snapshots/pt_<YYYYQn>/
-├── modelo-agregado/       # réplica agregada — valida esqueleto + projeção
-├── modelo-completo/       # 3 Phillips setoriais + 24 eq. admin + Kalman
-└── docs/                  # documentação
-```
+---
 
-## Pipeline
+## 📊 Números principais
 
-```
-01_download.py        → baixa/atualiza data/raw (idempotente)
-02_build_dataset.py   → data/processed/series.parquet + snapshots point-in-time
-modelo-agregado       → hiato + equações + projeção + fan chart + comparação RPM
-modelo-completo       → versão desagregada + Kalman + backtest rolante
-```
+| Métrica | Resultado |
+|---|---:|
+| MAE vs cenário oficial (RPM jun/2026, 11 trimestres) | **0,20 p.p.** |
+| Diferença no 1º trimestre (2026Q2) | −0,26 p.p. |
+| Cenário oficial dentro do leque 50% do modelo | **11/11** |
+| Backtest (29 vintages, 2019–2026) — MAE médio | **1,83 p.p.** |
+| Benchmark naive (persistência) — MAE médio | 2,84 p.p. |
+| Setorização (livres setorial vs oficial) | **corr 0,98** |
+| Long horizon recursivo — MAE 1T / 4T à frente | 0,67 / 2,07 p.p. |
 
-### Uso
+---
+
+## O que é
+
+O Banco Central publica a **estrutura** do seu Modelo de Pequeno Porte (curva de Phillips, IS, regra de Taylor, paridade de juros, expectativas e o bloco de 24 equações de preços administrados), mas não divulga código nem a base tratada. Este repositório reconstrói esse modelo **a partir das fontes documentais do BCB** e valida contra as projeções oficiais.
+
+- **Dados 100% via API pública** (BCB/SGS, Focus, IBGE/SIDRA, NOAA, FRED), com framework **point-in-time** que impede vazamento de informação futura (auditado).
+- **Dois modelos**: agregado (Phillips única) e completo (3 Phillips setoriais + estado-espaço).
+- Tudo reproduzível e auditável.
+
+## Modelos
+
+![Componentes — livres vs administrados e setores](docs/figures/componentes.png)
+
+| Modelo | Descrição | MAE vs RPM |
+|---|---|---:|
+| **Agregado** | Phillips livre (restrição novo-keynesiana) + IS + Taylor + UIP + expectativas + admin + hiato HP | **0,20 p.p.** |
+| **Completo** | 3 Phillips setoriais (serviços, bens industriais, alimentação) + Kalman + repasse cambial | 1,07 p.p. * |
+
+\* Amostra setorial limitada a 2020+ (SIDRA) — menor robustez, documentado.
+
+![Hiato do produto](docs/figures/hiato.png)
+
+## Validação
+
+**Backtest** — para cada vintage (2019Q1–2026Q1), o modelo é re-estimado com dados disponíveis até lá e projeta 12 trimestres. O modelo ganha do benchmark naive em quase todos os horizontes:
+
+![MAE por horizonte — modelo vs naive](docs/figures/backtest_horizonte.png)
+
+**Long horizon** — projeção recursiva modelo vs realizado:
+
+![Modelo vs realizado](docs/figures/longhorizon.png)
+
+**Setorização** — preços livres setorial vs oficial (corr 0,98):
+
+![Setorização](docs/figures/setorizacao.png)
+
+## 🐳 Abre e usa (Docker)
 
 ```bash
-pip install -r downloader/requirements.txt
+# 1. Reproduz tudo (dados → snapshots → modelos → figuras → resumo)
+docker compose run pipeline
 
-python downloader/scripts/01_download.py
-python downloader/scripts/02_build_dataset.py
+# 2. Dashboard interativo
+docker compose up dashboard   # abre http://localhost:8501
 ```
 
-Reexecutar mais tarde atualiza a pasta de dados: o download só busca o que está desatualizado (janela de cache em `config/settings.yaml`) e o build regenera os snapshots.
+Sem Docker, basta `pip install -r requirements.txt` e:
 
-## Point-in-time (anti-vazamento)
+```bash
+python main.py                 # pipeline completo + resumo
+python scripts/make_figures.py # figuras da documentação
+streamlit run dashboard/app.py # dashboard
+```
 
-Cada observação carrega `available_from` (data em que ficou pública). Os snapshots são cortados por `ref_date <= cutoff` **e** `available_from <= cutoff`, então uma projeção feita na vintage `2026Q2` só vê o que existia até 30/06/2026. Regras em `downloader/config/availability.yaml` e detalhes em `docs/point-in-time.md`.
+## Como funciona (fluxo)
 
-## Fontes de dados
+```
+dados brutos (SGS · Focus · SIDRA · NOAA · FRED)
+      ↓  point-in-time (available_from por observação)
+snapshots por trimestre (pt_2019Q1 … pt_2026Q2)
+      ↓
+trimestralização + hiato (HP / Kalman)
+      ↓
+estimação das equações (OLS)
+      ↓
+sistema simultâneo → projeção 12T → fan chart (Monte Carlo)
+      ↓
+validação vs cenário oficial (RPM) · backtest rolante · long horizon
+```
 
-| Fonte | Endpoint | Séries |
-|---|---|---|
-| BCB/SGS | `api.bcb.gov.br` | IPCA, livres/admin, IBC-Br, Selic, câmbio, IC-Br, EMBI+ |
-| Focus | OLINDA OData | expectativas de mercado (IPCA, Selic, câmbio) |
-| IBGE/SIDRA | `apisidra.ibge.gov.br` | IPCA por subitem (setorização) |
-| NOAA | CPC | ONI (El Niño/La Niña) |
-| FRED | `fred.stlouisfed.org` | Fed Funds (melhor esforço) |
+## Documentação
 
-Catálogo completo em `docs/sources.md`.
+- [📄 Relatório completo](docs/relatorio.md) — todas as figuras, tabelas e limitações.
+- [📐 Equações](docs/equacoes.md) — especificação + 24 itens de administrados (anexo B9 do RPM).
+- [🛡 Validação](docs/validacao.md) — metodologia, métricas e auditoria point-in-time.
+- [🗂 Fontes de dados](docs/sources.md) · [⏱ Point-in-time](docs/point-in-time.md) · [🏗 Arquitetura](docs/arquitetura.md)
 
-## Estado
+## Limitações honestas
 
-- [x] Documentação (arquitetura, fontes, point-in-time, equações, validação)
-- [x] Coleta e pipeline point-in-time (download + snapshots)
-- [x] Modelo agregado (hiato HP + OLS + fan chart + comparação RPM + backtest rolante)
-- [x] Modelo completo (3 Phillips setoriais + bloco de 24 admin documentado + estado-espaço/Kalman + repasse cambial)
-- [x] Benchmark vs realizado + Focus + naive
-- [x] Auditoria point-in-time / look-ahead bias (correções aplicadas — ver `docs/validacao.md`)
-- [ ] Transcrição completa dos RPMs históricos (esquema em `config/rpm_historico.csv`, pendente)
-- [ ] IpeaData (setoriais longas) — endpoint instável; setorial usa SIDRA 2020+
+- **IC-Br** com lacuna 2024H2–2025Q3 → Phillips estimada até 2024Q2.
+- **Prêmio de risco** (EMBI+/CDS) sem histórico público → absorvido na constante da UIP.
+- **Repasse cambial** com sinal negativo na réplica (amostra OLS confundida pela apreciação 2021–23) — diverge do benchmark do BCB.
+- **Hiato externo** e **pesos pré-2020** não determináveis nas fontes públicas.
 
-## Resultados principais (resumo)
+Detalhes e números atualizados em [`docs/validacao.md`](docs/validacao.md).
 
-- **Aderência ao RPM jun/2026** (modelo agregado): MAE **0,20 p.p.** (11 trimestres),
-  projeção oficial dentro do leque de 50% em todos os trimestres sobrepostos.
-- **Backtest rolante** (2019Q1–2026Q1, 29 vintages): MAE médio **1,83 p.p.** vs
-  benchmark naive **2,84 p.p.** (viés −0,77 p.p.).
-- **Setorização validada**: livres setorial vs oficial com correlação 0,98.
-- **Modelo completo (setorial, 2020+)**: MAE **1,07 p.p.** — amostra curta limita a
-  robustez das Phillips setoriais (documentado).
-- Detalhes e limitações honestas em `docs/validacao.md`.
+---
 
-## Fontes de referência da implementação
-
-A especificação do modelo (equações, variáveis, estrutura) vem exclusivamente dos documentos do BCB:
-
-- Relatório de Política Monetária (RPM) — cenários e projeções oficiais.
-- Anexos dos RPM/RI: atualização dos modelos semiestruturais de pequeno porte e o modelo de preços administrados (24 equações).
-
-Ver `docs/equacoes.md` e `docs/validacao.md`.
-
-## Notas de implementação (o que descobrimos ao vivo)
-
-- SGS `1`/`11`/`432` são séries **diárias** na API atual (pedem janela ≤10 anos); usamos as mensais `3696`/`4189`/`4390`.
-- OLINDA (Focus) rejeita codificação `+` do `requests` — a URL precisa ser montada manualmente com `%20`/`%27`, e `$top` grande (10 000) para paginação eficiente.
-- `ExpectativaMercadoMensais` é **singular**; `ExpectativasMercadoMensais` não existe.
-- EMBI+ (18621) está indisponível (índice descontinuado em 2024); limitação documentada.
+*Implementação e documentação baseadas exclusivamente em publicações do Banco Central do Brasil (RPM/RI e anexos). Não é código oficial do BCB.*
