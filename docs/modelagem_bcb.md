@@ -92,24 +92,33 @@ RPM jun/2025 B9, RI mar/2023 b4), `docs/priors_bcb.md`, `docs/proveniencia.md`.
 
 ## 3.1 Rodada de melhorias (P2–P6 refinados)
 
-- **Inflação importada reforçada**: IC-Br em R$ como **desvio da meta** (construção do RI)
-  + **componente de energia** (ΔBrent em R$), dois regressores com suporte ≥0. O canal
-  continua fraco na amostra pública (imp_total ~0,007 bayesiano; ~0 no OLS restrito) —
-  a decomposição de 2024 ainda atribui pouco à importada (0,0 vs 0,72 do ofício), agora
-  com o residual explicando a diferença.
-- **Hiato por Kalman** no `run_bcb` (`--gap kalman`, default): o hiato da Phillips subiu
-  de 0,05 → **0,27** (RI 0,14), mas a IS ficou mais fraca (AR 0,44 vs 0,74; juro real
-  0,004 vs 0,55) — trade-off documentado entre o hiato do estado-espaço (mais próximo do
-  BCB) e o ajuste da IS.
-- **Projeção do agregado BCB** (`system_bcb.py`): sistema com Phillips/IS/expectativas
-  BCB, Taylor/UIP/admin do modelo atual, **expectativas consistentes resolvidas por
-  fixed-point** (φ2 do RI). **MAE vs RPM: 0,60 p.p.** (estável, convergindo para ~4% ao
-  fim do horizonte — mais alto que o agregado simples 0,20, trade-off de fidelidade).
-- **Câmbio como desvio da PPC nas Phillips setoriais** (`phillips.py`/`system.py`):
-  consistência com o agregado; MAE completo permanece **0,46 p.p.**.
-- **Admin por item (B9)**: tabela de repasses por item (`B9_PT`: gasolina ~50%, GLP ~20%,
-  diesel ~65%, energia ~8% FX) documentada; a calibração agregada mantém o inicial
-  empírico (0,19/0,14) que reproduz os alvos de IRF com melhor ajuste.
+- **Inflação importada reforçada**: IC-Br em R$ como **desvio da meta suavizado (média 4T)**
+  (medida lisa como o BCB) + **componente de energia** (ΔBrent em R$). O canal melhora de
+  ~0 para **0,0105** no OLS restrito (RI 0,018) — continua abaixo do oficial, documentado.
+- **Hiato por Kalman** no `run_bcb` (`--gap kalman`, default): Phillips hiato 0,05 → **0,27**
+  (RI 0,14); IS enfraquece (AR 0,44) — trade-off documentado.
+- **Estado-espaço conjunto** (`estado_espaco_conjunto.py`): hiato + juro neutra latentes com
+  Phillips/IS/observações de atividade num único MLE (L-BFGS-B). Com a Phillips fixada (dos
+  valores estimados), o **hiato sai consistente com a inflação na escala certa** (média
+  0,18%, ±1%). A identificação da juro neutra/IS real no MLE segue fraca (sem priors —
+  exatamente o que o bayesiano do BCB fornece); documentado como experimental, com o
+  estágio-1 (Kalman) como default.
+- **Projeção do agregado BCB** (`system_bcb.py`): expectativas consistentes (fixed-point),
+  **MAE vs RPM 0,54–0,92 p.p.** (sensível ao número de amostras bayesianas).
+- **IRFs vs RI dez/2021**: demanda −1 p.p. (hiato) → **+1,13 p.p.** no IPCA 4T (RI: −0,45)
+  — o canal de hiato da Phillips bayesiana (0,28 vs RI 0,14) superestima; Selic +1 p.p. →
+  ≈0,015 (canal de juro real fraco).
+- **Câmbio como desvio da PPC nas Phillips setoriais**: MAE completo permanece **0,46 p.p.**.
+- **Admin por item (B9)**: repasses por item documentados (`B9_PT`); calibração mantém os
+  alvos de IRF do anexo (1,86/1,30) com melhor ajuste.
+
+## 3.2 Limites de dados confirmados (definitivos)
+- **Nuci (FGV) e Caged (MTE)**: indisponíveis via API pública (IpeaData vazio, Novo Caged
+  404, FMI 403) → hiato com os 4 indicadores do BCB não é viável.
+- **CDS 5 anos / prêmio de risco**: séries SGS 25121/26991 retornam valores mas não são
+  identificáveis com segurança → prêmio absorvido na constante da UIP.
+- **Julgamento de especialistas** (curto prazo) e **parâmetros das 24 equações de admin**:
+  não publicados.
 
 ## 4. Notas de fidelidade
 - Parâmetros numéricos das 24 equações de admin **não são publicados**; a réplica calibra

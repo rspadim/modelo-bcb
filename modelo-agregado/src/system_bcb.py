@@ -34,7 +34,8 @@ class BcbSystem:
         self.p_adm = est["admin"]["params"]
         self.q = q
 
-    def _sim(self, periods, sim, state, gap2, scenario, e_seq=None):
+    def _sim(self, periods, sim, state, gap2, scenario, e_seq=None, shock_gap_pp=0.0,
+             shock_cambio_pp=0.0):
         p, pi_, pe = self.p_phi, self.p_is, self.p_expect
         lastval = lambda c: float(self.q[c].dropna().iloc[-1]) if self.q[c].notna().any() else float("nan")
         cambio = lastval("cambio")
@@ -62,6 +63,8 @@ class BcbSystem:
                          + self.p_tay["selic_2"] * state["selic_2"] + self.p_tay["dev_pi"] * (e - META))
                 dln_c = self.p_uip.get("const", 0) + self.p_uip.get("diff_juros", 0) * (state["selic"] - ff)
             selic = 0.85 * state["selic"] + 0.15 * selic
+            if shock_cambio_pp and i == 0:
+                dln_c += shock_cambio_pp
             cambio = cambio * np.exp(dln_c / 100)
             if np.isfinite(brent) and brent > 0:
                 dln_b = np.log(brent / state.get("_brent", brent)) * 100 if state.get("_brent") else 0.0
@@ -78,6 +81,8 @@ class BcbSystem:
                    + pi_["fisc_cc"] * fisc_cc
                    + pi_["incert"] * incert
                    + pi_["us_gap"] * us_gap)
+            if shock_gap_pp and i == 0:
+                gap += shock_gap_pp
 
             pi_l = (p["pi_l_1"] * state["pi_l"] + p["e_pi_next"] * e
                     + p.get("imp_total", 0) * imp_total + p.get("imp_energia", 0) * imp_energia
@@ -102,7 +107,8 @@ class BcbSystem:
         return out
 
     def forecast(self, horizon: int = 12, scenario=None, expect_mode: str = "consistent",
-                 expect_tol: float = 1e-3, expect_maxiter: int = 40) -> pd.DataFrame:
+                 expect_tol: float = 1e-3, expect_maxiter: int = 40,
+                 shock_gap_pp: float = 0.0, shock_cambio_pp: float = 0.0) -> pd.DataFrame:
         q = self.q.copy()
         last_q = q.index[-1].to_period("Q")
         periods = pd.period_range(last_q + 1, periods=horizon, freq="Q")
@@ -112,9 +118,11 @@ class BcbSystem:
         state["e_prev"] = state["e_pi_next"]
         state["pi_prev"] = state["pi_l"]
         gap2 = float(sim["gap"].iloc[-2]) if len(sim) > 1 else state["gap"]
+        _shock_c = shock_cambio_pp
 
         def run(e_seq=None):
-            return self._sim(periods, sim, dict(state), gap2, scenario, e_seq)
+            return self._sim(periods, sim, dict(state), gap2, scenario, e_seq,
+                             shock_gap_pp=shock_gap_pp, shock_cambio_pp=_shock_c)
 
         if expect_mode != "consistent":
             return run()

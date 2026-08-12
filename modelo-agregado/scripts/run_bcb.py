@@ -131,9 +131,29 @@ def main() -> None:
         print(f"  MAE ({len(valid)} trimestres): {mae:.3f} p.p.")
         print(comp[["pi4", "pi_l", "rpm_ipca4"]].round(2).to_string())
         comp.to_csv(OUT / "projecao_bcb.csv", index_label="period")
+
+        # ---- IRFs do agregado BCB vs RI dez/2021 ----
+        base = sys_b.forecast(horizon=args.horizon, scenario=scenario, expect_mode="consistent")
+        irf_gap = sys_b.forecast(horizon=args.horizon, scenario=scenario,
+                                 expect_mode="consistent", shock_gap_pp=-1.0)
+        irf_selic = sys_b.forecast(horizon=args.horizon,
+                                   scenario=scenario.assign(selic=scenario["selic"] + 1.0),
+                                   expect_mode="consistent")
+        irf_cam = sys_b.forecast(horizon=args.horizon, scenario=scenario,
+                                 expect_mode="consistent", shock_cambio_pp=10.0)
+        d_gap = irf_gap["pi4"] - base["pi4"]
+        d_selic = irf_selic["pi4"] - base["pi4"]
+        d_cam = irf_cam["pi4"] - base["pi4"]
+        print("\nIRFs AGREGADO BCB (Δ p.p. IPCA 4T) vs RI dez/2021")
+        print(f"  demanda -1 p.p. (hiato): pico {d_gap.abs().max():.3f} p.p. "
+              f"| RI: -0,45 p.p. em 4T")
+        print(f"  Selic +1 p.p.: pico {d_selic.abs().max():.3f} p.p.")
+        print(f"  Câmbio +10%: pico {d_cam.abs().max():.3f} p.p.")
+        pd.DataFrame({"demanda": d_gap, "selic": d_selic, "cambio": d_cam}).to_csv(
+            OUT / "irfs_bcb.csv", index_label="period")
     except Exception as e:  # noqa: BLE001
         import traceback
-        print(f"\nPROJEÇÃO: indisponível ({e})")
+        print(f"\nPROJEÇÃO/IRFs: indisponível ({e})")
         traceback.print_exc()
 
 

@@ -24,7 +24,7 @@ def decompose(q: pd.DataFrame, phillips: dict, start: str = "2024Q1",
     """Contribuições trimestrais ao desvio πL − meta (p.p.)."""
     p = phillips["params"]
     d = q.copy()
-    d["imp_total_dev"] = (d["pi_com"].ffill() + d["dln_cambio"]) - meta / 4
+    d["imp_total_dev"] = (d["pi_com"].ffill() + d["dln_cambio"]).rolling(4).mean() - meta / 4
     d["imp_energia"] = np.log(d["brent"] * d["cambio"]).diff() * 100
     d["dev_ppc"] = d["dln_cambio"] - PPC_AA / 4
     d["elnino"] = d["oni"].clip(lower=0)

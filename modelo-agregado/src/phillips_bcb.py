@@ -29,8 +29,9 @@ def estimate_phillips_bcb(q: pd.DataFrame, start: str = "2003Q4", end: str = "20
     Retorna dict com params, suportes, n, r2 e comparação com as modas publicadas.
     """
     d = q.copy()
-    # inflação importada: IC-Br em R$ como DESVIO da meta (construção do RI) + energia (Brent R$)
-    d["imp_total_dev"] = (d["pi_com"] + d["dln_cambio"]) - META_AA / 4
+    # inflação importada: IC-Br em R$ como DESVIO da meta, SUAVIZADO (média 4T — medida lisa
+    # como o BCB usa) + energia (Brent R$)
+    d["imp_total_dev"] = (d["pi_com"].ffill() + d["dln_cambio"]).rolling(4).mean() - META_AA / 4
     d["imp_energia"] = np.log(d["brent"] * d["cambio"]).diff() * 100
     d["dev_ppc"] = d["dln_cambio"] - ppc_aa / 4       # desvio da PPC
     d["elnino"] = d["oni"].clip(lower=0)              # parte positiva (El Niño)
@@ -99,7 +100,7 @@ def estimate_phillips_bcb_bayes(q: pd.DataFrame, start: str = "2003Q4", end: str
     import pymc as pm  # import local (PyMC só é necessário neste método)
 
     d = q.copy()
-    d["imp_total_dev"] = (d["pi_com"] + d["dln_cambio"]) - META_AA / 4
+    d["imp_total_dev"] = (d["pi_com"].ffill() + d["dln_cambio"]).rolling(4).mean() - META_AA / 4
     d["imp_energia"] = np.log(d["brent"] * d["cambio"]).diff() * 100
     d["dev_ppc"] = d["dln_cambio"] - ppc_aa / 4
     d["elnino"] = d["oni"].clip(lower=0)
