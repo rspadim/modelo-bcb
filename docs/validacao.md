@@ -64,6 +64,20 @@ horizonte; comparação com benchmarks (Focus, naive/persistência).
   calibrado** (`--admin calibrado`, default). Sem os condicionantes o MAE era ~1,07 p.p.;
   com admin OLS, 0,59 p.p.
 
+## 3.0 Modelo integrado (o modelo BCB da réplica) — `run_integrado.py`
+
+Estimação bayesiana **conjunta plena** (PyMC, hiato + juro neutra latentes + Phillips +
+IS + expectativas) com o sistema único (admin endógeno + expectativas consistentes):
+
+- **IRF demanda −1 p.p. (hiato) → IPCA 4T**: ~0,4–0,6 p.p. (RI: −0,45) — a conjunta com o
+  hiato Phillips-consistente corrigiu a divergência que era 1,13 no modo fragmentado.
+- **Juro real neutra** (estado latente): média ~5–6% (offset de nível; direção consistente).
+- **MAE vs RPM jun/2026**: ~0,7–0,8 p.p. (sensível ao número de amostras bayesianas).
+- **IRF câmbio +10% → admin**: ~1,9 p.p. (alvo B9 ~1,8).
+
+Este é o único componente tratado como "modelo BCB" na réplica (ver `docs/status.md`);
+`modelo-agregado/` e `modelo-completo/` são experimentos legado.
+
 ## 3.1 Modelo agregado fiel ao BCB (RI dez/2021) — `run_bcb.py`
 
 Estimação bayesiana com os **priors publicados** do RI dez/2021 (amostra 2003T4–2019T4),
@@ -180,6 +194,7 @@ python modelo-agregado/scripts/backtest.py          # backtest rolante
 python modelo-completo/scripts/run_complete.py      # setorial (--est bayes p/ bayesiana)
 python modelo-completo/scripts/irf_and_risk.py      # IRFs + balanço de riscos + fan chart paramétrico
 python modelo-completo/scripts/validate_sector.py   # validação da setorização
+python modelo-integrado/scripts/run_integrado.py    # MODELO BCB (conjunta plena) — o modelo principal
 ```
 
 Saídas em `*/output/`: tabelas CSV, fan charts e gráficos de erro.

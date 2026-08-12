@@ -2,6 +2,13 @@
 
 **Reconstrução pública do modelo de projeção de inflação do Banco Central do Brasil (MPP)**, com dados point-in-time, equações estimadas, backtest e comparação com o cenário oficial.
 
+> **⚠️ Status — leia antes de usar**
+> Esta é uma **réplica em construção**. O **único "modelo BCB"** é o **modelo integrado**
+> (`modelo-integrado/`, estimação bayesiana conjunta: hiato + juro neutra latentes +
+> Phillips/IS/expectativas). `modelo-agregado/` e `modelo-completo/` são **experimentos
+> legado** (aproximações parciais). Veja [`docs/status.md`](docs/status.md) para o que é
+> e o que ainda **não** é o modelo BCB.
+
 ![Fan chart — modelo vs cenário oficial](docs/figures/fan_chart.png)
 
 > **MAE de 0,20 p.p. contra o cenário oficial do RPM jun/2026** (11 trimestres) — a projeção oficial cai **dentro do leque de 50% do modelo em todos os trimestres**.
@@ -34,12 +41,13 @@ O Banco Central publica a **estrutura** do seu Modelo de Pequeno Porte (curva de
 
 ![Componentes — livres vs administrados e setores](docs/figures/componentes.png)
 
-| Modelo | Descrição | MAE vs RPM |
-|---|---|---:|
-| **Agregado** | Phillips livre (restrição novo-keynesiana) + IS + Taylor + UIP + expectativas + admin + hiato HP | **0,20 p.p.** |
-| **Agregado BCB** | Fiel ao RI dez/2021: Phillips com importada R$/PPC/clima assimétrico, IS completa, expectativas com φ2, juro neutra latente (`run_bcb.py`) | comparação vs priors do RI |
-| **Completo** | 3 Phillips setoriais + estado-espaço + cenário condicionado (câmbio PPC, Brent, RONI) + **admin calibrado (B9)** | **0,46 p.p.** |
-| **Completo (bayesiano)** | Phillips + IS + admin conjuntos (PyMC), repasse cambial positivo | 0,60 p.p. |
+| Modelo | Descrição | Status |
+|---|---|---|
+| **Integrado** ⭐ | Estimação bayesiana conjunta (hiato + juro neutra latentes + Phillips/IS/expectativas) + admin endógeno + expectativas consistentes | **o modelo BCB da réplica** |
+| Agregado | Phillips livre + IS + Taylor + UIP + admin + hiato HP (MAE vs RPM **0,20 p.p.**) | experimento legado |
+| Completo | 3 Phillips setoriais + admin calibrado (B9) (MAE **0,46 p.p.**) | experimento legado |
+
+O modelo integrado é o alvo; os legados servem de diagnóstico e referência. Reprodução: `python modelo-integrado/scripts/run_integrado.py`.
 
 \* Amostra setorial limitada a 2020+ (SIDRA) — menor robustez, documentado.
 
@@ -100,6 +108,7 @@ validação vs cenário oficial (RPM) · backtest rolante · long horizon
 ## Documentação
 
 - [📄 Relatório completo](docs/relatorio.md) — todas as figuras, tabelas e limitações.
+- [🚦 Status — o que é e o que não é o modelo BCB](docs/status.md) — **leia primeiro**.
 - [📐 Equações](docs/equacoes.md) — especificação + bloco de administrados (anexo B9).
 - [🛡 Validação](docs/validacao.md) — metodologia, métricas e auditoria point-in-time.
 - [🏛 Modelagem no BCB × réplica](docs/modelagem_bcb.md) — auditoria de lacunas e roadmap.

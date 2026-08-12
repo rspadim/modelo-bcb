@@ -7,6 +7,7 @@ services:
       - ./downloader/data:/app/downloader/data
       - ./modelo-agregado/output:/app/modelo-agregado/output
       - ./modelo-completo/output:/app/modelo-completo/output
+      - ./modelo-integrado/output:/app/modelo-integrado/output
       - ./docs/figures:/app/docs/figures
     environment:
       - PYTHONUNBUFFERED=1
@@ -21,6 +22,7 @@ services:
       - ./downloader/data:/app/downloader/data
       - ./modelo-agregado/output:/app/modelo-agregado/output
       - ./modelo-completo/output:/app/modelo-completo/output
+      - ./modelo-integrado/output:/app/modelo-integrado/output
       - ./docs/figures:/app/docs/figures
     environment:
       - PYTHONUNBUFFERED=1
