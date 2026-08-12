@@ -25,10 +25,11 @@ NEUTRA_FIXA = 5.0
 
 
 class SistemaIntegrado:
-    def __init__(self, est: dict, q: pd.DataFrame, admin_est: dict | None = None):
+    def __init__(self, est: dict, q: pd.DataFrame, admin_est: dict | None = None,
+                 phillips_setorial: dict | None = None, pesos_setoriais: dict | None = None):
         """est: params da conjunta (Phillips a*, IS b*) + expect (φ) + taylor/uip/admin.
-        admin_est: (opcional) equação calibrada de administrados — o default usa a equação
-        OLS endógena (feedback via inflação passada do próprio sistema).
+        admin_est: (opcional) equação calibrada de administrados.
+        phillips_setorial/pesos_setoriais: (opcional) modo desagregado — pi_l = Σ w_s·π_s.
         """
         self.p = est["phillips"]
         self.p_is = est["is"]
@@ -37,6 +38,8 @@ class SistemaIntegrado:
         self.p_uip = est["uip"]["params"]
         self.p_adm = est["admin"]["params"]
         self.admin = admin_est["params"] if admin_est is not None else None
+        self.pset = phillips_setorial
+        self.wsec = pesos_setoriais
         self.q = q
 
     def _sim(self, periods, sim, state, gap2, scenario, admin_path_exog=None,
@@ -84,14 +87,26 @@ class SistemaIntegrado:
             if shock_gap_pp and i == 0:
                 gap += shock_gap_pp
 
-            # ---- Phillips de livres (com o hiato) ----
+            # ---- Phillips de livres (agregada ou SETORIAL) ----
             imp = (pi_com + dln_c) - meta_q
             imp_en = dln_b
             dev_ppc = dln_c - PPC_AA / 4
-            pi_l = (self.p["a1"] * state["pi_l"] + (1 - self.p["a1"]) * e
-                    + self.p["a2"] * imp + self.p["a3"] * dev_ppc
-                    + self.p["a4"] * state["gap"]
-                    + self.p["a5"] * max(oni, 0) + self.p["a6"] * max(-oni, 0))
+            if self.pset is not None:
+                sec = {}
+                for s in ["servicos", "industriais", "alimentacao"]:
+                    pp = self.pset[s]["params"]
+                    sec[s] = (pp["const"] + pp["pi_1"] * state.get(s, pp["const"])
+                              + pp["e_pi_next"] * e + pp["gap_1"] * state["gap"]
+                              + pp["dev_ppc"] * dev_ppc + pp["pi_com"] * imp
+                              + pp["oni"] * max(oni, 0))
+                    state[s] = sec[s]
+                wsum = sum(self.wsec[s] for s in sec)
+                pi_l = sum(sec[s] * self.wsec[s] for s in sec) / wsum
+            else:
+                pi_l = (self.p["a1"] * state["pi_l"] + (1 - self.p["a1"]) * e
+                        + self.p["a2"] * imp + self.p["a3"] * dev_ppc
+                        + self.p["a4"] * state["gap"]
+                        + self.p["a5"] * max(oni, 0) + self.p["a6"] * max(-oni, 0))
 
             # ---- Administrados ENDÓGENOS (feedback via indexação à inflação passada) ----
             if admin_path_exog is not None and period in admin_path_exog.index:
@@ -127,6 +142,9 @@ class SistemaIntegrado:
         periods = pd.period_range(last_q + 1, periods=horizon, freq="Q")
         sim = q.iloc[max(0, q.index.get_loc(q.index[-1]) - 3):].copy()
         state = {k: float(sim[k].iloc[-1]) for k in ["pi_l", "pi_a", "gap", "selic", "e_pi_next"]}
+        if self.pset is not None:
+            for s in ["servicos", "industriais", "alimentacao"]:
+                state[s] = float(sim[s].dropna().iloc[-1]) if sim[s].notna().any() else 0.0
         state.setdefault("selic_2", state["selic"])
         state["e_prev"] = state["e_pi_next"]
         state["pi_prev"] = state["pi_l"]

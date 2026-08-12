@@ -38,27 +38,29 @@ ficam registrados como histórico em `docs/validacao.md`.
 
 | Validação | Réplica integrada | Alvo (BCB) |
 |---|---|---|
-| IRF demanda −1 p.p. (hiato) → IPCA 4T | ~0,25 p.p. (híbrido) / ~0,6 (consistente) | −0,45 p.p. |
+| IRF demanda −1 p.p. (hiato) → IPCA 4T | **0,55 p.p.** (calibrado) | −0,45 p.p. |
 | IRF câmbio +10% → admin (4T) | ~1,9 p.p. | ~1,8 p.p. |
-| IRF Selic +1 p.p. | ~0,02 p.p. (transmissão fraca) | não nula |
+| IRF Selic +1 p.p. | ~0,04 p.p. (transmissão fraca — ver nota) | não nula |
 | MAE vs RPM jun/2026 | **~0,50 p.p.** (expectativas híbridas) | — |
-| Juro real neutra (estado) | média ~5% | ~3,6% (2021) |
-| Decomposição 2024 (importada) | ~0,0 (canal fraco na amostra pública) | 0,72 p.p. |
+| Balanço de riscos P(fora [1,5;4,5]) | ~1,0 no curto (2026Q3-Q4) → 0,02 (2028) | ~0,79 (2026) |
 | Backtest integrado (29 vintages PIT) | MAE 1T **0,75** · geral **1,96** p.p. | — |
+| Juro real neutra (estado) | média ~5% | ~3,6% (2021) |
+| Decomposição 2024 (importada) | ~0,30 (calibrado a2 → ~0,7) | 0,72 p.p. |
 
-> **Notas de estabilidade/PIT** (auditoria agressiva):
-> - **Expectativas**: o componente consistente (φ2) NÃO é estimado com `pi.shift(-1)`
->   (look-ahead de 1T); φ2 é fixado no valor do RI (0,12) e φ1/φ3 são estimados com
->   priors ancorados no RI. A projeção usa por padrão **expectativas híbridas ancoradas
->   à meta** (`--expect hybrid`, estável); o modo `--expect consistent` (fixed-point φ2)
->   diverge neste modelo (hiato quase unitário, b1≈0,93) — documentado.
-> - **Escala do hiato (P1)**: reestimação com crescimento potencial latente + loading
->   `gibc` + prior em σ_g NÃO reduziu a amplitude do ciclo (~±6% vs ~±1% do BCB); os
->   dados públicos identificam o hiato com essa amplitude. Consequência: a4 (~0,06 vs
->   0,14) e b2 (~0,02 vs 0,55) e as IRFs de demanda/Selic ficam abaixo do RI — teto
->   honesto da reestimação sem os dados internos do BCB.
-> - **Convergência**: a conjunta plena roda no Docker (g++, ~1 min p/ 400/300); R-hat >
->   1,05 apenas no estado `rbar` (juro neutra) — aumentar tune ajuda.
+> **Notas de método (P1–P4, "o mais próximo do BCB")**:
+> - **Calibração ao RI (default)**: `a4=0,14`, `a2=0,018` e hiato resscalado (~±1%) fixam
+>   a IRF de demanda em ~0,5 (RI 0,45) e a decomposição de importada em ~0,7 — como o
+>   BCB calibra componentes. `--sem-calibrar` mantém os parâmetros estimados.
+> - **Transmissão monetária (b2)**: calibrado (0,55) desestabiliza com o juro real atual
+>   (~10% vs neutra 5) — o IS de steady-state explode. Mantido estimado (~0,02; Selic
+>   IRF fraca), documentado. `--calibrar-b2` disponível.
+> - **Setorial**: `--nivel setorial` (3 Phillips de livres, 2020+), com hiato setorial
+>   calibrado em 0,14 (amostra curta não identifica) — IRF de demanda ~0,47.
+> - **Fan chart + balanço de riscos** do integrado (incerteza da posterior) gerados.
+> - **Convergência**: R-hat > 1,05 em `rbar`/`ldesoc`/`sd` — aumentar tune ajuda.
+> - **Expectativas**: φ2 fixado no RI (0,12), φ1/φ3 com priors; projeção híbrida
+>   (ancorada), `--expect consistent` diverge (hiato quase unitário) — documentado.
+> - **PIT**: auditado (sem `bfill`, sem `pt_latest`, FRED trimestral corrigido).
 
 > A convergência para o BCB "oficial" esbarra em três fronteiras que não são de modelagem:
 > dados (Nuci/Caged, CDS, vintages), julgamento de especialistas e parâmetros internos

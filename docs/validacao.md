@@ -67,18 +67,23 @@ horizonte; comparação com benchmarks (Focus, naive/persistência).
 ## 3.0 Modelo integrado (o modelo BCB da réplica) — `run_integrado.py`
 
 Estimação bayesiana **conjunta plena** (PyMC, hiato + juro neutra latentes + Phillips +
-IS + expectativas) com o sistema único (admin endógeno + expectativas):
+IS + expectativas) com o sistema único (admin endógeno + expectativas), **calibrado aos
+valores do RI dez/2021** (default): `a4=0,14`, `a2=0,018`, hiato resscalado (~±1%);
 
-- **MAE vs RPM jun/2026: ~0,50 p.p.** (expectativas híbridas ancoradas — default; o modo
-  `--expect consistent` diverge neste modelo, documentado).
-- **IRF demanda −1 p.p. (hiato) → IPCA 4T**: ~0,22 p.p. (híbrido) / ~0,6 (consistente)
-  — RI: −0,45. O canal de hiato (a4≈0,06) é menor que o do RI (0,14).
-- **Juro real neutra** (estado latente): média ~4,5%.
-- **PIT**: φ2 (consistente) não é estimado com `pi.shift(-1)` — fixado no RI (0,12) e
-  φ1/φ3 com priors ancorados; rodada no Docker com g++ (conjunta ~1 min p/ 400/300).
+- **MAE vs RPM jun/2026: ~0,50 p.p.** (expectativas híbridas ancoradas).
+- **IRF demanda −1 p.p. (hiato) → IPCA 4T: ~0,55 p.p.** (RI: −0,45).
+- **IRF câmbio +10% → admin: ~1,9 p.p.** (RI: ~1,8).
+- **IRF Selic +1 p.p.: ~0,04 p.p.** — transmissão fraca: `b2` calibrado (0,55) desestabiliza
+  com o juro real atual (~10% vs neutra 5); `--calibrar-b2` disponível.
+- **Fan chart + balanço de riscos** do integrado: P(fora [1,5;4,5]) ~1,0 no curto (2026Q3–Q4,
+  projeção acima do RPM) → ~0,02 em 2028 (RPM ~0,79 em 2026).
+- **Modo setorial** (`--nivel setorial`): 3 Phillips de livres (2020+), hiato setorial
+  calibrado em 0,14 → IRF de demanda ~0,47.
+- **Tabela de fidelidade** vs RI salva em `modelo-integrado/output/fidelidade_vs_ri.csv`.
+- **PIT**: auditado (φ2 sem `shift(-1)`, sem `bfill`/`pt_latest`, FRED trimestral corrigido).
 
-Este é o único componente tratado como "modelo BCB" na réplica (ver `docs/status.md`);
-`modelo-agregado/` e `modelo-completo/` são experimentos legado.
+Este é o único componente tratado como "modelo BCB" na réplica (ver `docs/status.md`).
+Versões parciais anteriores removidas (agregado MAE 0,20; completo 0,46; backtest 1,83).
 
 ## 3.1 Modelo agregado fiel ao BCB (RI dez/2021) — `run_bcb.py`
 
