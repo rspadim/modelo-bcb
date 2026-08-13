@@ -33,7 +33,7 @@ OUT = ROOT / "output"
 NAIVE_H = 4
 
 
-def run_vintage(vintage: str, horizon: int = 12) -> pd.DataFrame | None:
+def run_vintage(vintage: str, horizon: int = 12, calibrar: bool = False) -> pd.DataFrame | None:
     df = load_snapshot(vintage)
     cutoff = pd.Timestamp(df["available_from"].max()) if "available_from" in df.columns else pd.NaT
     q = build_quarterly(df)
@@ -49,14 +49,35 @@ def run_vintage(vintage: str, horizon: int = 12) -> pd.DataFrame | None:
     est_e = estimate_expect_bcb(q, bayes=False)
     aux = eqmod.estimate_all(q)
     pp = est_p["params"]
+
+    # Calibração ao RI dez/2021 — opcional (--calibrar) e PIT-AWARE: os valores calibrados
+    # (a4/a2/b1/a5/a6) são as modas do RI dez/2021 (available_from 2021-12-31); aplicá-los
+    # em vintages com cutoff anterior seria vazamento. Empiricamente, a calibração PIORA a
+    # acurácia fora de amostra (2,17 vs 1,92 estimado) — o default é o modelo ESTIMADO.
+    q_uso = q
+    if calibrar and not pd.isna(cutoff) and pd.Timestamp(cutoff) >= pd.Timestamp(
+            spec_man.available_from("priors_agregado")):
+        gap_std = float(q["gap"].std()) if q["gap"].std() > 0 else 1.0
+        fator = 1.0 / max(gap_std, 0.3)
+        q_uso = q.copy()
+        q_uso["gap"] = q["gap"] * fator
+        q_uso["gap_1"] = q_uso["gap"].shift(1)
+        pp = dict(pp)
+        pp["gap_1"] = 0.14
+        pp["imp_total"] = 0.018
+        pp["elnino"] = 0.00119
+        pp["lanina"] = 0.00104
+        pp["b1"] = 0.74
+        pp["b2"] = 0.15
     est_full = {
         "phillips": {"a1": pp["pi_l_1"], "a2": pp["imp_total"], "a3": pp["dev_ppc"],
                      "a4": pp["gap_1"], "a5": pp["elnino"], "a6": pp["lanina"]},
-        "is": {"b1": est_i["params"]["gap_1"], "b2": est_i["params"]["rreal_gap"]},
+        "is": {"b1": pp.get("b1", est_i["params"]["gap_1"]),
+               "b2": pp.get("b2", est_i["params"]["rreal_gap"])},
         "expect": est_e["params"],
         "taylor": aux["taylor"], "uip": aux["uip"], "admin": aux["admin"],
     }
-    sys_i = SistemaIntegrado(est_full, q, None)
+    sys_i = SistemaIntegrado(est_full, q_uso, None)
 
     last_q = q.index[-1].to_period("Q")
     nq = last_q + 1
@@ -95,6 +116,8 @@ def main() -> None:
     import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument("--horizon", type=int, default=12)
+    ap.add_argument("--calibrar", action="store_true", default=False,
+                    help="aplica a calibração ao RI dez/2021 (PIT-aware; piora a acurácia fora de amostra)")
     args = ap.parse_args()
     OUT.mkdir(exist_ok=True)
 
@@ -105,7 +128,7 @@ def main() -> None:
             if year == 2026 and qn > 1:
                 continue
             try:
-                r = run_vintage(vintage, args.horizon)
+                r = run_vintage(vintage, args.horizon, calibrar=args.calibrar)
                 if r is not None:
                     frames.append(r)
                     print(f"  {vintage}: ok")

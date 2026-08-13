@@ -49,6 +49,11 @@ ficam registrados como histórico em `docs/validacao.md`.
 > **Notas de método (rodada de fechamento)**:
 > - **Calibração ao RI (default)**: `a4=0,14`, `a2=0,018`, `b1=0,74`, `a5=0,0012`,
 >   `a6=0,0010` e hiato resscalado (~±1%). `--sem-calibrar` mantém os estimados.
+> - **Calibração vs backtest (achado)**: a calibração é PIT-AWARE no backtest (só em
+>   vintages ≥ 31/12/2021, quando o RI dez/2021 foi publicado) e **PIORA a acurácia fora
+>   de amostra** (MAE geral 2,17 vs 1,92 do estimado) — é uma escolha de FIDELIDADE ao RI
+>   (IRFs e projeção atual), não de acuracidade preditiva. `backtest.py --calibrar` testa
+>   o modelo calibrado; o default testa o modelo estimado (1,92, o teste PIT honesto).
 > - **Juro neutra time-varying (~6%)**: a conjunta estima a neutra em ~6% (fim 6,08);
 >   usamos 6% na projeção, o que fecha o hiato de juro real e melhora o MAE (0,38).
 > - **Transmissão monetária**: `b2=0,55` (β2 do RI) ainda diverge (hiato −39); o gate usa
