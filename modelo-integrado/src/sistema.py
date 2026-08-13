@@ -26,10 +26,12 @@ NEUTRA_FIXA = 5.0
 
 class SistemaIntegrado:
     def __init__(self, est: dict, q: pd.DataFrame, admin_est: dict | None = None,
-                 phillips_setorial: dict | None = None, pesos_setoriais: dict | None = None):
+                 phillips_setorial: dict | None = None, pesos_setoriais: dict | None = None,
+                 neutra_path: pd.Series | None = None):
         """est: params da conjunta (Phillips a*, IS b*) + expect (φ) + taylor/uip/admin.
         admin_est: (opcional) equação calibrada de administrados.
-        phillips_setorial/pesos_setoriais: (opcional) modo desagregado — pi_l = Σ w_s·π_s.
+        phillips_setorial/pesos_setoriais: (opcional) modo desagregado.
+        neutra_path: (opcional) trajetória da juro real neutra por período (time-varying).
         """
         self.p = est["phillips"]
         self.p_is = est["is"]
@@ -40,6 +42,7 @@ class SistemaIntegrado:
         self.admin = admin_est["params"] if admin_est is not None else None
         self.pset = phillips_setorial
         self.wsec = pesos_setoriais
+        self.neutra_path = neutra_path
         self.q = q
 
     def _sim(self, periods, sim, state, gap2, scenario, admin_path_exog=None,
@@ -81,7 +84,10 @@ class SistemaIntegrado:
 
             # ---- IS: dinâmica do hiato com a juro neutra (estado-espaço) ----
             rreal = state["selic"] - 4 * e
-            neutra = state.get("neutra", NEUTRA_FIXA)
+            if self.neutra_path is not None and period in self.neutra_path.index:
+                neutra = float(self.neutra_path.loc[period])
+            else:
+                neutra = state.get("neutra", NEUTRA_FIXA)
             gap = (self.p_is["b1"] * state["gap"]
                    + self.p_is["b2"] * (neutra - rreal))
             if shock_gap_pp and i == 0:

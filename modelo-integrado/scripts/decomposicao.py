@@ -39,8 +39,19 @@ def main() -> None:
     q = gap_mod.add_gap_kalman(q)
     q["gap_1"] = q["gap"].shift(1)
 
-    est = estimate_phillips_bcb_bayes(q, draws=300, tune=200) if args.bayes \
-        else estimate_phillips_bcb(q)
+    # Usa a MESMA calibração da projeção (run_integrado): a4/a2/b1/a5/a6 do RI e hiato
+    # resscalado — sem isso a decomposição usa OLS (hiato ~0) e diverge da projeção.
+    est_est = estimate_phillips_bcb(q)
+    gap_std = float(q["gap"].std()) if q["gap"].std() > 0 else 1.0
+    fator = 1.0 / max(gap_std, 0.3)
+    q["gap"] = q["gap"] * fator
+    q["gap_1"] = q["gap"].shift(1)
+    params = dict(est_est["params"])
+    params["gap_1"] = 0.14        # RI α4 (hiato na Phillips)
+    params["imp_total"] = 0.018   # RI α2 (inflação importada)
+    params["elnino"] = 0.00119    # RI α5 (El Niño)
+    params["lanina"] = 0.00104    # RI α6 (La Niña)
+    est = {"params": params, "n": est_est["n"], "r2": est_est["r2"]}
     dec = decompose_period(q, est, "2024Q1", "2024Q4")
     print("== Decomposição 2024 (modelo integrado; contribuição ao desvio de livres vs meta, p.p.) ==")
     print("  ofício 374/2025-BCB: inércia 0,52 | importada 0,72 | hiato 0,49 | expect 0,30")

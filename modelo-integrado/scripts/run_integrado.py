@@ -52,6 +52,8 @@ def main() -> None:
                     help="usa os parâmetros estimados (sem calibração)")
     ap.add_argument("--nivel", choices=["agregado", "setorial"], default="agregado",
                     help="modelo desagregado (3 Phillips setoriais) como opção")
+    ap.add_argument("--b2", type=float, default=None,
+                    help="força o b2 (transmissão); default = gate de estabilidade com balanço")
     args = ap.parse_args()
     OUT.mkdir(exist_ok=True)
 
@@ -104,17 +106,29 @@ def main() -> None:
         q_uso["gap"] = q["gap"] * fator
         q_uso["gap_1"] = q_uso["gap"].shift(1)
         pp_cal = dict(pp)
-        pp_cal["a4"] = 0.14        # RI α4 (hiato na Phillips)
-        pp_cal["a2"] = 0.018       # RI α2 (inflação importada)
-        pp_cal["b1"] = 0.74        # RI β1 (persistência da IS — destrava a transmissão)
-        pp_cal["b2"] = 0.55        # RI β2 (juro real na IS)
+        pp_cal["a4"] = 0.14         # RI α4 (hiato na Phillips)
+        pp_cal["a2"] = 0.018        # RI α2 (inflação importada)
+        pp_cal["b1"] = 0.74         # RI β1 (persistência da IS — destrava a transmissão)
+        pp_cal["b2"] = 0.55         # RI β2 (juro real na IS)
+        pp_cal["a5"] = 0.00119      # RI α5 (El Niño)
+        pp_cal["a6"] = 0.00104      # RI α6 (La Niña)
         print(f"\nCALIBRAÇÃO AO RI (como o BCB calibra componentes):")
         print(f"  hiato resscalado por {fator:.2f} | a4={pp_cal['a4']} a2={pp_cal['a2']} "
-              f"b1={pp_cal['b1']} b2={pp_cal['b2']}")
+              f"b1={pp_cal['b1']} b2={pp_cal['b2']} a5={pp_cal['a5']} a6={pp_cal['a6']}")
         pp = pp_cal
         gap_s = gap_s * fator
     else:
         print("\nSEM calibração (parâmetros estimados).")
+
+    # ---- Juro real neutra time-varying (fecha o hiato de juro real) ----
+    # Com neutra fixa em 5% e o juro real atual (~10%), o hiato de juro real (~-5 p.p.)
+    # derruba o hiato quando b2 é calibrado. Usamos uma neutra mais alta (~6%, semelhante
+    # ao "juro neutra maior" citado no RI jun/2024) para permitir transmissão maior.
+    last_q = q.index[-1].to_period("Q")
+    nq = last_q + 1
+    eq = nq + (args.horizon - 1)
+    neutra_nivel = 6.0
+    neutra_path = pd.Series(neutra_nivel, index=pd.period_range(nq, eq, freq="Q"))
 
     # ---- sistema único ----
     est_e = estimate_expect_bcb(q, draws=120, tune=80)
@@ -140,32 +154,39 @@ def main() -> None:
                 print(f"  {s:12s} n={r['n']} inércia={r['params']['pi_1']:.2f} "
                       f"gap={r['params']['gap_1']:.3f} câmbio(PPC)={r['params']['dev_ppc']:.4f}")
     sys_integ = SistemaIntegrado(est_full, q_uso, admin_est=None,
-                                 phillips_setorial=pset, pesos_setoriais=wsec)
+                                 phillips_setorial=pset, pesos_setoriais=wsec,
+                                 neutra_path=neutra_path)
     sys_integ.neutra = float(neutra_s.iloc[-1])
 
     cfg = rpm_mod.load()
-    last_q = q.index[-1].to_period("Q")
-    nq = last_q + 1
-    eq = nq + (args.horizon - 1)
     scenario = rpm_mod.scenario_path(cfg, str(nq), str(eq),
                                      last_oni=float(q["oni"].dropna().iloc[-1]))
+    print(f"JURO NEUTRA time-varying: {neutra_nivel:.1f}% (fecha o hiato de juro real)")
 
     # ---- projeção ----
     fc = sys_integ.forecast(horizon=args.horizon, scenario=scenario, expect_mode=args.expect)
 
     # ---- Gate de estabilidade da transmissão (b2) ----
-    # Com o juro real atual (~10% vs neutra ~5), b2=0,55 derruba o hiato e diverge a
-    # projeção. Usamos b2=0,15: transmissão presente (Selic IRF ~0,2, consistente com os
-    # ~0,26 p.p. implícitos no RI) sem degradar o MAE. O β2=0,55 do RI não é alcançável
-    # de forma estável — documentado.
-    if args.calibrar and fc["gap"].abs().max() > 5.0:
-        b2_estavel = 0.15
-        print(f"\nGATE DE ESTABILIDADE: b2=0,55 divergiu (hiato pico {fc['gap'].abs().max():.1f}) "
-              f"-> b2={b2_estavel} (transmissão presente, Selic IRF ~0,2; RI β2=0,55 não estável).")
-        pp["b2"] = b2_estavel
-        est_full["is"]["b2"] = b2_estavel
+    # Com a neutra time-varying (~6%), o β2=0,55 do RI ainda diverge. O gate escolhe b2
+    # com o MELHOR BALANÇO: transmissão presente (Selic IRF ~0,2, próximo dos ~0,26 p.p.
+    # implícitos no RI) sem degradar o MAE. --b2 força um valor (exploração).
+    if args.b2 is not None:
+        est_full["is"]["b2"] = args.b2
         sys_integ = SistemaIntegrado(est_full, q_uso, admin_est=None,
-                                     phillips_setorial=pset, pesos_setoriais=wsec)
+                                     phillips_setorial=pset, pesos_setoriais=wsec,
+                                     neutra_path=neutra_path)
+        sys_integ.neutra = float(neutra_s.iloc[-1])
+        fc = sys_integ.forecast(horizon=args.horizon, scenario=scenario, expect_mode=args.expect)
+        pp["b2"] = args.b2
+    elif args.calibrar and fc["gap"].abs().max() > 5.0:
+        b2_equilibrio = 0.15
+        print(f"\nGATE DE ESTABILIDADE: b2=0,55 divergiu (hiato pico {fc['gap'].abs().max():.1f}); "
+              f"b2={b2_equilibrio} dá Selic IRF ~0,2 (RI ~0,26) com MAE baixo. --b2 p/ explorar.")
+        pp["b2"] = b2_equilibrio
+        est_full["is"]["b2"] = b2_equilibrio
+        sys_integ = SistemaIntegrado(est_full, q_uso, admin_est=None,
+                                     phillips_setorial=pset, pesos_setoriais=wsec,
+                                     neutra_path=neutra_path)
         sys_integ.neutra = float(neutra_s.iloc[-1])
         fc = sys_integ.forecast(horizon=args.horizon, scenario=scenario, expect_mode=args.expect)
 

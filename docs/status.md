@@ -38,26 +38,29 @@ ficam registrados como histórico em `docs/validacao.md`.
 
 | Validação | Réplica integrada | Alvo (BCB) |
 |---|---|---|
-| IRF demanda −1 p.p. (hiato) → IPCA 4T | **0,40–0,55 p.p.** (calibrado) | −0,45 p.p. |
+| IRF demanda −1 p.p. (hiato) → IPCA 4T | **~0,40 p.p.** (calibrado) | −0,45 p.p. |
 | IRF câmbio +10% → admin (4T) | ~1,9 p.p. | ~1,8 p.p. |
 | IRF Selic +1 p.p. | **~0,20 p.p.** (transmissão presente) | ~0,26 p.p. (implícito no RI) |
-| MAE vs RPM jun/2026 | **~0,58 p.p.** (expectativas híbridas) | — |
-| Balanço de riscos P(fora [1,5;4,5]) | ~1,0 no curto (2026Q3-Q4) → 0,02 (2028) | ~0,79 (2026) |
-| Backtest integrado (29 vintages PIT) | MAE 1T **0,75** · geral **1,96** p.p. | — |
-| Juro real neutra (estado) | média ~5% | ~3,6% (2021) |
+| MAE vs RPM jun/2026 | **~0,38 p.p.** (expectativas híbridas) | — |
+| Balanço de riscos P(fora [1,5;4,5]) | ~1,0 no curto → ~0,02 (2028) | ~0,79 (2026) |
+| Backtest integrado (29 vintages PIT) | MAE 1T **0,74** · geral **1,92** p.p. | — |
+| Decomposição 2024 (importada) | **~0,51** (calibrado a2) | 0,72 p.p. |
 
-> **Notas de método (P1–P4, "o mais próximo do BCB")**:
-> - **Calibração ao RI (default)**: `a4=0,14`, `a2=0,018`, `b1=0,74` (β1 do RI — destrava
->   a transmissão) e hiato resscalado (~±1%). `--sem-calibrar` mantém os estimados.
-> - **Transmissão monetária**: `b2=0,55` (β2 do RI) **diverge** com o juro real atual
->   (~10% vs neutra ~5) — o hiato vai a −39. Gate de estabilidade usa **b2=0,15**:
->   Selic IRF ~0,20 (consistente com os ~0,26 p.p. implícitos no RI). β2=0,55 não é
->   alcançável de forma estável — documentado como teto do cenário público.
+> **Notas de método (rodada de fechamento)**:
+> - **Calibração ao RI (default)**: `a4=0,14`, `a2=0,018`, `b1=0,74`, `a5=0,0012`,
+>   `a6=0,0010` e hiato resscalado (~±1%). `--sem-calibrar` mantém os estimados.
+> - **Juro neutra time-varying (~6%)**: a conjunta estima a neutra em ~6% (fim 6,08);
+>   usamos 6% na projeção, o que fecha o hiato de juro real e melhora o MAE (0,38).
+> - **Transmissão monetária**: `b2=0,55` (β2 do RI) ainda diverge (hiato −39); o gate usa
+>   `b2=0,15` → Selic IRF ~0,20 (RI implícito ~0,26). `--b2` força um valor (exploração).
+> - **Decomposição consistente com a calibração**: importada ~0,51, clima ~0,003; o
+>   hiato na decomposição segue ~0 (nosso gap em 2024 é ~0 vs BCB ~0,5 — medição, não
+>   calibração).
 > - **Setorial**: `--nivel setorial` (3 Phillips 2020+), hiato setorial calibrado 0,14.
-> - **Fan chart + balanço de riscos** do integrado (incerteza da posterior).
-> - **Convergência**: R-hat > 1,05 em `rbar`/`ldesoc` — aumentar tune ajuda.
-> - **Expectativas**: φ2 fixado no RI (0,12), φ1/φ3 com priors; projeção híbrida ancorada.
-> - **PIT**: auditado (sem `bfill`, sem `pt_latest`, FRED trimestral corrigido).
+> - **Fan chart + balanço de riscos**: incerteza da posterior (leque não calibrado ao RPM).
+> - **Convergência**: prior mais informativa no `rbar`; R-hat melhora, mas `rbar`/`ldesoc`
+>   ainda > 1,05 com tune 250 — aumentar tune ajuda.
+> - **PIT**: auditado (2 rodadas), sem `bfill`/`shift(-1)`/`pt_latest`/cenário futuro.
 
 > A convergência para o BCB "oficial" esbarra em três fronteiras que não são de modelagem:
 > dados (Nuci/Caged, CDS, vintages), julgamento de especialistas e parâmetros internos

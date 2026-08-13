@@ -85,8 +85,10 @@ def estimar_conjunta(q: pd.DataFrame, start: str = "2003Q4", end: str = "2019Q4"
         sp = pm.HalfNormal("sp", 0.6)
         gibc = pm.Normal("gibc", 0.5, 0.2)  # loading do ciclo na observação de IBC (<1)
 
-        # latentes: juro neutra (passeio aleatório lento) + crescimento potencial flexível
-        rbar = pm.GaussianRandomWalk("rbar", sigma=SIGMA_R, init_dist=pm.Normal.dist(0, 1), shape=n)
+        # latentes: juro neutra (passeio aleatório lento, prior mais informativa p/ convergência)
+        # + crescimento potencial flexível
+        rbar = pm.GaussianRandomWalk("rbar", sigma=SIGMA_R,
+                                     init_dist=pm.Normal.dist(0, 0.3), shape=n)
         trend = pm.GaussianRandomWalk("trend", sigma=0.5, init_dist=pm.Normal.dist(0, 0.5), shape=n)
 
         # hiato AR(1) com drift da IS (loop Python sobre n ~ 64 é barato simbolicamente)
