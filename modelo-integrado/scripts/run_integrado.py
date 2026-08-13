@@ -50,8 +50,6 @@ def main() -> None:
                     help="calibra a4/b2/a2 aos valores do RI dez/2021 (padrão, como o BCB calibra)")
     ap.add_argument("--sem-calibrar", dest="calibrar", action="store_false",
                     help="usa os parâmetros estimados (sem calibração)")
-    ap.add_argument("--calibrar-b2", action="store_true", default=False,
-                    help="também calibra b2 (juro real) em 0,55 — pode desestabilizar com o juro real atual")
     ap.add_argument("--nivel", choices=["agregado", "setorial"], default="agregado",
                     help="modelo desagregado (3 Phillips setoriais) como opção")
     args = ap.parse_args()
@@ -95,9 +93,9 @@ def main() -> None:
     # ---- Calibração aos valores publicados do RI dez/2021 ----
     # O hiato estimado tem amplitude ~±6% (dados públicos); o BCB usa ~±1% (função de
     # produção com dados internos). Calibramos: resscalar o hiato à convenção do BCB e
-    # fixar a4 (Phillips/hiato) e a2 (importada) nas modas do RI, de modo que a IRF de
-    # demanda e a decomposição reproduzam o PDF. b2 (juro real) é calibrado só com
-    # --calibrar-b2: com o juro real atual (~10% vs neutra 5) o IS fica instável.
+    # fixar a4 (Phillips/hiato), a2 (importada), b1 (persistência da IS) e b2 (juro real)
+    # nas modas do RI, de modo que as IRFs reproduzam o PDF. b2 pode desestabilizar com o
+    # juro real atual (~10% vs neutra 5) — o gate de estabilidade abaixo reduz se preciso.
     q_uso = q
     if args.calibrar:
         gap_std = float(gap_s.std()) if gap_s.std() > 0 else 1.0
@@ -108,11 +106,11 @@ def main() -> None:
         pp_cal = dict(pp)
         pp_cal["a4"] = 0.14        # RI α4 (hiato na Phillips)
         pp_cal["a2"] = 0.018       # RI α2 (inflação importada)
-        if args.calibrar_b2:
-            pp_cal["b2"] = 0.55    # RI β2 (juro real na IS) — pode desestabilizar
+        pp_cal["b1"] = 0.74        # RI β1 (persistência da IS — destrava a transmissão)
+        pp_cal["b2"] = 0.55        # RI β2 (juro real na IS)
         print(f"\nCALIBRAÇÃO AO RI (como o BCB calibra componentes):")
         print(f"  hiato resscalado por {fator:.2f} | a4={pp_cal['a4']} a2={pp_cal['a2']} "
-              f"b2={'0.55' if args.calibrar_b2 else 'estimado'}")
+              f"b1={pp_cal['b1']} b2={pp_cal['b2']}")
         pp = pp_cal
         gap_s = gap_s * fator
     else:
@@ -154,6 +152,23 @@ def main() -> None:
 
     # ---- projeção ----
     fc = sys_integ.forecast(horizon=args.horizon, scenario=scenario, expect_mode=args.expect)
+
+    # ---- Gate de estabilidade da transmissão (b2) ----
+    # Com o juro real atual (~10% vs neutra ~5), b2=0,55 derruba o hiato e diverge a
+    # projeção. Usamos b2=0,15: transmissão presente (Selic IRF ~0,2, consistente com os
+    # ~0,26 p.p. implícitos no RI) sem degradar o MAE. O β2=0,55 do RI não é alcançável
+    # de forma estável — documentado.
+    if args.calibrar and fc["gap"].abs().max() > 5.0:
+        b2_estavel = 0.15
+        print(f"\nGATE DE ESTABILIDADE: b2=0,55 divergiu (hiato pico {fc['gap'].abs().max():.1f}) "
+              f"-> b2={b2_estavel} (transmissão presente, Selic IRF ~0,2; RI β2=0,55 não estável).")
+        pp["b2"] = b2_estavel
+        est_full["is"]["b2"] = b2_estavel
+        sys_integ = SistemaIntegrado(est_full, q_uso, admin_est=None,
+                                     phillips_setorial=pset, pesos_setoriais=wsec)
+        sys_integ.neutra = float(neutra_s.iloc[-1])
+        fc = sys_integ.forecast(horizon=args.horizon, scenario=scenario, expect_mode=args.expect)
+
     rpm_path = rpm_mod.rpm_ipca_path(cfg)
     comp = fc.set_index("period")
     comp.index = pd.PeriodIndex(comp.index, freq="Q")

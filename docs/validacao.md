@@ -70,13 +70,13 @@ Estimação bayesiana **conjunta plena** (PyMC, hiato + juro neutra latentes + P
 IS + expectativas) com o sistema único (admin endógeno + expectativas), **calibrado aos
 valores do RI dez/2021** (default): `a4=0,14`, `a2=0,018`, hiato resscalado (~±1%);
 
-- **MAE vs RPM jun/2026: ~0,50 p.p.** (expectativas híbridas ancoradas).
-- **IRF demanda −1 p.p. (hiato) → IPCA 4T: ~0,55 p.p.** (RI: −0,45).
+- **MAE vs RPM jun/2026: ~0,58 p.p.** (expectativas híbridas ancoradas).
+- **IRF demanda −1 p.p. (hiato) → IPCA 4T: ~0,40–0,55 p.p.** (RI: −0,45).
 - **IRF câmbio +10% → admin: ~1,9 p.p.** (RI: ~1,8).
-- **IRF Selic +1 p.p.: ~0,04 p.p.** — transmissão fraca: `b2` calibrado (0,55) desestabiliza
-  com o juro real atual (~10% vs neutra 5); `--calibrar-b2` disponível.
-- **Fan chart + balanço de riscos** do integrado: P(fora [1,5;4,5]) ~1,0 no curto (2026Q3–Q4,
-  projeção acima do RPM) → ~0,02 em 2028 (RPM ~0,79 em 2026).
+- **IRF Selic +1 p.p.: ~0,20 p.p.** — transmissão monetária presente (b1 calibrado em 0,74
+  destrava; gate de estabilidade usa b2=0,15 — β2=0,55 diverge com o juro real atual).
+- **Fan chart + balanço de riscos**: P(fora [1,5;4,5]) ~1,0 no curto (2026Q3–Q4) → ~0,02
+  em 2028 (RPM ~0,79 em 2026).
 - **Modo setorial** (`--nivel setorial`): 3 Phillips de livres (2020+), hiato setorial
   calibrado em 0,14 → IRF de demanda ~0,47.
 - **Tabela de fidelidade** vs RI salva em `modelo-integrado/output/fidelidade_vs_ri.csv`.
