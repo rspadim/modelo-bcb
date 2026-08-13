@@ -19,6 +19,7 @@ from data import load_snapshot, build_quarterly  # noqa: E402
 import gap as gap_mod  # noqa: E402
 from phillips_bcb import estimate_phillips_bcb, estimate_phillips_bcb_bayes  # noqa: E402
 from decomposicao import decompose, decompose_period  # noqa: E402
+import spec_manifesto as spec_man  # noqa: E402
 
 OUT = ROOT / "output"
 
@@ -31,6 +32,9 @@ def main() -> None:
     OUT.mkdir(exist_ok=True)
 
     df = load_snapshot(args.vintage)
+    cutoff = pd.Timestamp(df["available_from"].max()) if "available_from" in df.columns else pd.NaT
+    if not spec_man.check_spec("priors_agregado", cutoff):
+        sys.exit("[spec_manifesto] especificação (RI dez/2021) posterior ao cutoff da vintage — abortando.")
     q = build_quarterly(df)
     q = gap_mod.add_gap_kalman(q)
     q["gap_1"] = q["gap"].shift(1)

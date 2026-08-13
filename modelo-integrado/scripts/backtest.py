@@ -3,6 +3,11 @@
 Para cada vintage pt_2019Q1..pt_2026Q1: estima com dados ≤ cutoff (estimação rápida
 staged/OLS), projeta 12 trimestres com o sistema integrado (expectativas híbridas) e
 compara com o IPCA realizado. Métricas: MAE, RMSE, MdAE por horizonte + benchmark naive.
+
+Disciplina point-in-time da ESPECIFICAÇÃO: o cenário condicionante do RPM jun/2026
+(spec_manifesto.yaml, available_from 2026-06-25) só é usado em vintages com cutoff
+posterior à publicação do cenário; nas demais a projeção usa o sistema endógeno
+(Taylor/UIP + PPC). O `pt_latest` é usado apenas como alvo de AVALIAÇÃO (realizado).
 """
 from __future__ import annotations
 
@@ -22,6 +27,7 @@ from equacoes_bcb import estimate_is_bcb, estimate_expect_bcb  # noqa: E402
 from sistema import SistemaIntegrado  # noqa: E402
 import equations as eqmod  # noqa: E402
 import rpm as rpm_mod  # noqa: E402
+import spec_manifesto as spec_man  # noqa: E402
 
 OUT = ROOT / "output"
 NAIVE_H = 4
@@ -29,6 +35,7 @@ NAIVE_H = 4
 
 def run_vintage(vintage: str, horizon: int = 12) -> pd.DataFrame | None:
     df = load_snapshot(vintage)
+    cutoff = pd.Timestamp(df["available_from"].max()) if "available_from" in df.columns else pd.NaT
     q = build_quarterly(df)
     q = gap_mod.add_gap_kalman(q)
     q["gap_1"] = q["gap"].shift(1)
@@ -54,7 +61,22 @@ def run_vintage(vintage: str, horizon: int = 12) -> pd.DataFrame | None:
     last_q = q.index[-1].to_period("Q")
     nq = last_q + 1
     eq = nq + (horizon - 1)
-    scenario = rpm_mod.scenario_path(rpm_mod.load(), str(nq), str(eq), last_oni=0.0)
+    # Cenário do RPM jun/2026 (spec_manifesto.yaml: available_from 2026-06-25) só pode
+    # condicionar projeções de vintages cujo cutoff é POSTERIOR à publicação do cenário.
+    # Em vintages antigas usa-se o sistema ENDÓGENO (Taylor/UIP + PPC) — o cenário do
+    # futuro numa vintage passada seria vazamento de especificação.
+    scenario = None
+    if spec_man.check_spec("rpm_2026q2", cutoff):
+        scenario = rpm_mod.scenario_path(rpm_mod.load(), str(nq), str(eq), last_oni=0.0)
+    else:
+        print(f"    {vintage}: cenário RPM 2026Q2 indisponível na vintage "
+              f"(cutoff {pd.Timestamp(cutoff).date()}) -> cenário endógeno PIT")
+    # Nota deliberada: os suportes/priors do RI dez/2021 (spec 'priors_agregado',
+    # available_from 2021-12-31) definem a ESTRUTURA do modelo replicado (referência
+    # fixa), não um input condicionante variável no tempo — por isso não aborta em
+    # vintages anteriores, apenas avisa.
+    if not spec_man.check_spec("priors_agregado", cutoff):
+        print(f"    {vintage}: AVISO — estrutura (suportes) do RI dez/2021 posterior ao cutoff")
     fc = sys_i.forecast(horizon=horizon, scenario=scenario, expect_mode="hybrid")
     fc = fc.set_index(pd.PeriodIndex(fc["period"], freq="Q"))
 
